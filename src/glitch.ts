@@ -1,7 +1,10 @@
+import { GojibakeGlyphElement } from "./glitch/gojibake-glyph-element.js";
 import { GlitchRenderer } from "./glitch/renderer.js";
 import type { Config } from "./glitch/state-factory.js";
 import { GlitchStateFactory } from "./glitch/state-factory.js";
 import { pickGlyphForChar } from "./glitch/utils.js";
+
+customElements.define("gojibake-glyph", GojibakeGlyphElement);
 
 const config: Config = {
   // 全体のうち何割を glitch 対象候補にするか。
