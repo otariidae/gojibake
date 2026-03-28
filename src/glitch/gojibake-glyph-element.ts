@@ -25,15 +25,15 @@ const SHADOW_CSS = `
   place-items: center;
 }
 
-.char__base {
+.base {
   display: block;
   text-align: center;
   opacity: 0;
 }
 
-.char__half {
-  --half-shift-x: 0em;
-  --half-shift-y: 0em;
+.fragment {
+  --shift-x: 0em;
+  --shift-y: 0em;
   position: absolute;
   inset: 0;
   display: flex;
@@ -43,44 +43,69 @@ const SHADOW_CSS = `
   pointer-events: none;
   color: inherit;
   text-shadow: inherit;
-  transform: translate(var(--half-shift-x), var(--half-shift-y));
+  transform: translate(var(--shift-x), var(--shift-y));
 }
 
-.char__half--clip-left  { clip-path: inset(0 50% 0 0); }
-.char__half--clip-right { clip-path: inset(0 0 0 50%); }
-.char__half--clip-top   { clip-path: inset(0 0 50% 0); }
-.char__half--clip-bottom { clip-path: inset(50% 0 0 0); }
-
-.char__half--place-top    { --half-shift-y: -0.5em; }
-.char__half--place-bottom { --half-shift-y: 0.5em; }
-.char__half--place-left   { --half-shift-x: -0.5em; }
-.char__half--place-right  { --half-shift-x: 0.5em; }
-
-.char__quad {
-  --quad-shift-x: 0ch;
-  --quad-shift-y: 0em;
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  pointer-events: none;
-  color: inherit;
-  text-shadow: inherit;
-  transform: translate(var(--quad-shift-x), var(--quad-shift-y));
+.fragment[data-layout="dual"][data-clip="left"] {
+  clip-path: inset(0 50% 0 0);
+}
+.fragment[data-layout="dual"][data-clip="right"] {
+  clip-path: inset(0 0 0 50%);
+}
+.fragment[data-layout="dual"][data-clip="top"] {
+  clip-path: inset(0 0 50% 0);
+}
+.fragment[data-layout="dual"][data-clip="bottom"] {
+  clip-path: inset(50% 0 0 0);
 }
 
-.char__quad--clip-top-left    { clip-path: inset(0 50% 50% 0); }
-.char__quad--clip-top-right   { clip-path: inset(0 0 50% 50%); }
-.char__quad--clip-bottom-left { clip-path: inset(50% 50% 0 0); }
-.char__quad--clip-bottom-right { clip-path: inset(50% 0 0 50%); }
+.fragment[data-layout="dual"][data-place="top"] {
+  --shift-y: -0.5em;
+}
+.fragment[data-layout="dual"][data-place="bottom"] {
+  --shift-y: 0.5em;
+}
+.fragment[data-layout="dual"][data-place="left"] {
+  --shift-x: -0.5em;
+}
+.fragment[data-layout="dual"][data-place="right"] {
+  --shift-x: 0.5em;
+}
 
-.char__quad--place-top-left    { --quad-shift-x: -0.5em; --quad-shift-y: -0.5em; }
-.char__quad--place-top-right   { --quad-shift-x: 0.5em;  --quad-shift-y: -0.5em; }
-.char__quad--place-bottom-left { --quad-shift-x: -0.5em; --quad-shift-y: 0.5em; }
-.char__quad--place-bottom-right { --quad-shift-x: 0.5em; --quad-shift-y: 0.5em; }
+.fragment[data-layout="quad"][data-clip="top-left"] {
+  clip-path: inset(0 50% 50% 0);
+}
+.fragment[data-layout="quad"][data-clip="top-right"] {
+  clip-path: inset(0 0 50% 50%);
+}
+.fragment[data-layout="quad"][data-clip="bottom-left"] {
+  clip-path: inset(50% 50% 0 0);
+}
+.fragment[data-layout="quad"][data-clip="bottom-right"] {
+  clip-path: inset(50% 0 0 50%);
+}
+
+.fragment[data-layout="quad"][data-place="top-left"] {
+  --shift-x: -0.5em;
+  --shift-y: -0.5em;
+}
+.fragment[data-layout="quad"][data-place="top-right"] {
+  --shift-x: 0.5em;
+  --shift-y: -0.5em;
+}
+.fragment[data-layout="quad"][data-place="bottom-left"] {
+  --shift-x: -0.5em;
+  --shift-y: 0.5em;
+}
+.fragment[data-layout="quad"][data-place="bottom-right"] {
+  --shift-x: 0.5em;
+  --shift-y: 0.5em;
+}
 `;
+
+const SHADOW_STYLESHEET = new CSSStyleSheet();
+
+SHADOW_STYLESHEET.replaceSync(SHADOW_CSS);
 
 type DualFragmentAttributes = {
   glyph: string;
@@ -117,6 +142,7 @@ export class GojibakeGlyphElement extends HTMLElement {
   public constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" });
+    this.shadow.adoptedStyleSheets = [SHADOW_STYLESHEET];
   }
 
   public connectedCallback(): void {
@@ -127,15 +153,11 @@ export class GojibakeGlyphElement extends HTMLElement {
     const baseChar = this.textContent ?? "";
     const fragmentElements = this.readFragmentElements();
 
-    const style = document.createElement("style");
-    style.textContent = SHADOW_CSS;
-
     const base = document.createElement("span");
-    base.className = "char__base";
+    base.className = "base";
     base.textContent = baseChar === " " ? "\u00a0" : baseChar;
 
     const df = document.createDocumentFragment();
-    df.appendChild(style);
     df.appendChild(base);
 
     if (fragmentElements.length === 2) {
@@ -145,9 +167,11 @@ export class GojibakeGlyphElement extends HTMLElement {
         const place = crossed ? fragment.position : null;
 
         const span = document.createElement("span");
-        span.classList.add("char__half", `char__half--clip-${clip}`);
+        span.className = "fragment";
+        span.dataset.layout = "dual";
+        span.dataset.clip = clip;
         if (place) {
-          span.classList.add(`char__half--place-${place}`);
+          span.dataset.place = place;
         }
         span.textContent = fragment.glyph;
         df.appendChild(span);
@@ -159,9 +183,11 @@ export class GojibakeGlyphElement extends HTMLElement {
         const place = crossed ? fragment.quadrant : null;
 
         const span = document.createElement("span");
-        span.classList.add("char__quad", `char__quad--clip-${clip}`);
+        span.className = "fragment";
+        span.dataset.layout = "quad";
+        span.dataset.clip = clip;
         if (place) {
-          span.classList.add(`char__quad--place-${place}`);
+          span.dataset.place = place;
         }
         span.textContent = fragment.glyph;
         df.appendChild(span);
