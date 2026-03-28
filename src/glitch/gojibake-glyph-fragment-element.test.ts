@@ -156,6 +156,20 @@ describe("GojibakeGlyphFragmentElement", () => {
       expect(warnings).toEqual([]);
     });
 
+    it("親レイアウトが未確定でも不正な region は警告して null を返す", () => {
+      renderFixture(
+        '<gojibake-glyph-fragment glyph="片" region="center"></gojibake-glyph-fragment>',
+      );
+      const element = getFragment();
+      const region = element.region;
+
+      expect(region).toBeNull();
+      expect(warnings).toEqual([
+        '<gojibake-glyph-fragment>: region 属性が不正です。region 属性は "top"・"bottom"・"left"・"right"・"top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "center"。',
+        '<gojibake-glyph-fragment>: region 属性が不正です。region 属性は "top"・"bottom"・"left"・"right"・"top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "center"。',
+      ]);
+    });
+
     it("region 属性がなければ警告して null を返す", () => {
       renderFixture('<gojibake-glyph-fragment glyph="片"></gojibake-glyph-fragment>');
       const element = getFragment();
