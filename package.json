@@ -6,12 +6,15 @@
     "prebuild": "rm -rf dist",
     "build": "bun build ./index.html --outdir ./dist --target browser",
     "dev": "bun ./index.html",
+    "test": "bun test",
     "check:fix": "biome check . --write",
     "check": "biome check . && bun run build",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",
+    "@happy-dom/global-registrator": "^20.8.9",
+    "happy-dom": "^20.8.9",
     "typescript": "^5.9.2"
   }
 }
