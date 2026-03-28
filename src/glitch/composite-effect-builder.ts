@@ -3,14 +3,14 @@ export type DualCompositePosition = "top" | "bottom" | "left" | "right";
 
 /**
  * クリップ方向と配置の対応関係。dual・quad どちらの断片にも共通して使う。
- * - "aligned": クリップ側と表示位置が一致する
+ * - "same-side": クリップ側と表示位置が一致する
  *   - dual 例: 上側をクリップして上に表示
  *   - quad 例: 左上象限をクリップして左上に表示
- * - "crossed": クリップ側と表示位置が反転する（対辺・対角へシフト配置）
+ * - "opposite-side": クリップ側と表示位置が反転する（対辺・対角へシフト配置）
  *   - dual 例: 下側をクリップして上にシフト配置
  *   - quad 例: 右下象限をクリップして左上にシフト配置
  */
-export type HalvingMode = "aligned" | "crossed";
+export type PlacementMode = "same-side" | "opposite-side";
 
 /** 4分割時の各象限 */
 export type QuadCompositeQuadrant = "top-left" | "top-right" | "bottom-left" | "bottom-right";
@@ -31,13 +31,13 @@ export type DualCompositeFragment = {
   /** この断片が占める位置。縦分割なら "top"/"bottom"、横分割なら "left"/"right" */
   position: DualCompositePosition;
   /** クリップと配置の対応関係 */
-  halving: HalvingMode;
+  placement: PlacementMode;
 };
 
 /**
  * 文字セルを 2 分割して 2 つのグリフを重ねる合成エントリ。
  * 縦軸（上下）か横軸（左右）のどちらかで分割する。
- * 各断片の position・halving によってクリップ方向と配置がレンダラ側で決まる。
+ * 各断片の position・placement によってクリップ方向と配置がレンダラ側で決まる。
  */
 export type DualCompositeEntry = {
   kind: "dual";
@@ -51,12 +51,12 @@ export type QuadCompositeFragment = {
   /** この断片が占める象限 */
   quadrant: QuadCompositeQuadrant;
   /** クリップと配置の対応関係 */
-  halving: HalvingMode;
+  placement: PlacementMode;
 };
 
 /**
  * 文字セルを 2×2 の 4 象限に分割して 4 つのグリフを重ねる合成エントリ。
- * 各象限の halving によってクリップ方向と配置がレンダラ側で決まる。
+ * 各象限の placement によってクリップ方向と配置がレンダラ側で決まる。
  */
 export type QuadCompositeEntry = {
   kind: "quad";
@@ -86,14 +86,14 @@ function pickGlyph(
   return Math.random() < mutateChance ? pickGlyphForChar(char) : char;
 }
 
-/** "aligned" か "crossed" をランダムに選ぶ */
-function randomHalving(): HalvingMode {
-  return Math.random() < 0.5 ? "aligned" : "crossed";
+/** "same-side" か "opposite-side" をランダムに選ぶ */
+function randomPlacement(): PlacementMode {
+  return Math.random() < 0.5 ? "same-side" : "opposite-side";
 }
 
 /**
  * 文字セルを縦か横の 2 分割で重ねる DualCompositeEntry を生成する。
- * 分割軸・各断片の文字・halving はすべてランダムに決まる。
+ * 分割軸・各断片の文字・placement はすべてランダムに決まる。
  */
 function createDualComposite(
   pickGlyphForChar: (char: string) => string,
@@ -111,12 +111,12 @@ function createDualComposite(
       {
         char: pickGlyph(pickGlyphForChar, sourceChar, mutateChance),
         position: posA,
-        halving: randomHalving(),
+        placement: randomPlacement(),
       },
       {
         char: pickGlyph(pickGlyphForChar, sourceChar, mutateChance),
         position: posB,
-        halving: randomHalving(),
+        placement: randomPlacement(),
       },
     ],
   };
@@ -124,7 +124,7 @@ function createDualComposite(
 
 /**
  * 文字セルを 2×2 の 4 象限で重ねる QuadCompositeEntry を生成する。
- * 各象限の文字・halving はランダムに決まる。
+ * 各象限の文字・placement はランダムに決まる。
  */
 function createQuadComposite(
   pickGlyphForChar: (char: string) => string,
@@ -137,22 +137,22 @@ function createQuadComposite(
       {
         char: pickGlyph(pickGlyphForChar, sourceChar, mutateChance),
         quadrant: "top-left",
-        halving: randomHalving(),
+        placement: randomPlacement(),
       },
       {
         char: pickGlyph(pickGlyphForChar, sourceChar, mutateChance),
         quadrant: "top-right",
-        halving: randomHalving(),
+        placement: randomPlacement(),
       },
       {
         char: pickGlyph(pickGlyphForChar, sourceChar, mutateChance),
         quadrant: "bottom-left",
-        halving: randomHalving(),
+        placement: randomPlacement(),
       },
       {
         char: pickGlyph(pickGlyphForChar, sourceChar, mutateChance),
         quadrant: "bottom-right",
-        halving: randomHalving(),
+        placement: randomPlacement(),
       },
     ],
   };
