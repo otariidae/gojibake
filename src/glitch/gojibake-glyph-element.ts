@@ -1,8 +1,4 @@
-import type {
-  DualCompositePosition,
-  PlacementMode,
-  QuadCompositeQuadrant,
-} from "./composite-effect-builder.js";
+import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
 
 /** span 生成直前の正規化済みフラグメント */
 type RenderFragment = {
@@ -13,6 +9,19 @@ type RenderFragment = {
   /** data-place に流し込む値。same-side のときは null */
   place: string | null;
 };
+
+type DualRenderFragment = RenderFragment & {
+  position: string;
+};
+
+type QuadRenderFragment = RenderFragment & {
+  quadrant: string;
+};
+
+const FRAGMENT_TAG_NAME = "GOJIBAKE-GLYPH-FRAGMENT";
+const DUAL_POSITIONS = ["top", "bottom", "left", "right"] as const;
+const QUAD_QUADRANTS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+const PLACEMENT_MODES = ["same-side", "opposite-side"] as const;
 
 const OPPOSITE_POSITION: Record<DualCompositePosition, DualCompositePosition> = {
   top: "bottom",
@@ -117,6 +126,16 @@ const SHADOW_STYLESHEET = new CSSStyleSheet();
 
 SHADOW_STYLESHEET.replaceSync(SHADOW_CSS);
 
+function isOneOf<T extends string>(value: string, choices: readonly T[]): value is T {
+  return choices.includes(value as T);
+}
+
+function hasDualRegionPair(regions: Set<string>): boolean {
+  return (
+    (regions.has("top") && regions.has("bottom")) || (regions.has("left") && regions.has("right"))
+  );
+}
+
 /**
  * composite（dual / quad）グリッチ効果を表示するカスタム要素。
  *
@@ -175,50 +194,149 @@ export class GojibakeGlyphElement extends HTMLElement {
   /**
    * 子要素を読み取り、span 生成に必要な情報へ正規化する。
    * 子要素数が 2 なら dual、4 なら quad として扱う。それ以外は空配列を返す。
+   *
+   * 不正な構成は現段階では描画挙動を変えず、警告だけを出す。
    */
   private readRenderFragments(): RenderFragment[] {
-    const elements = Array.from(this.children).filter(
-      (node): node is HTMLElement => node.tagName === "GOJIBAKE-GLYPH-FRAGMENT",
+    const children = Array.from(this.children);
+
+    for (const node of children) {
+      if (node.tagName !== FRAGMENT_TAG_NAME) {
+        this.reportConfigurationWarning(
+          `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> は無視されます。`,
+        );
+      }
+    }
+
+    const elements = children.filter(
+      (node): node is HTMLElement => node.tagName === FRAGMENT_TAG_NAME,
     );
 
     if (elements.length === 2) {
-      return elements
-        .map((el): RenderFragment | null => {
-          const position = el.getAttribute("region") as DualCompositePosition | null;
-          const placement = el.getAttribute("placement") as PlacementMode | null;
-          if (!position || !placement) {
+      const fragments = elements
+        .map((el, index): DualRenderFragment | null => {
+          const position = el.getAttribute("region");
+          const placement = el.getAttribute("placement");
+          if (!position) {
+            this.reportFragmentAttributeWarning(index, "region", "region 属性は必須です。");
             return null;
           }
+          if (!placement) {
+            this.reportFragmentAttributeWarning(index, "placement", "placement 属性は必須です。");
+            return null;
+          }
+
+          const glyph = el.getAttribute("glyph");
+          if (glyph === null) {
+            this.reportFragmentAttributeWarning(index, "glyph", "glyph 属性は必須です。");
+          }
+          if (!isOneOf(position, DUAL_POSITIONS)) {
+            this.reportFragmentAttributeWarning(
+              index,
+              "region",
+              `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${position}"。`,
+            );
+          }
+          if (!isOneOf(placement, PLACEMENT_MODES)) {
+            this.reportFragmentAttributeWarning(
+              index,
+              "placement",
+              `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${placement}"。`,
+            );
+          }
+
           const crossed = placement === "opposite-side";
           return {
-            glyph: el.getAttribute("glyph") ?? "",
+            glyph: glyph ?? "",
             layout: "dual",
-            clip: crossed ? OPPOSITE_POSITION[position] : position,
+            clip: crossed ? OPPOSITE_POSITION[position as DualCompositePosition] : position,
             place: crossed ? position : null,
+            position,
           };
         })
-        .filter((f): f is RenderFragment => f !== null);
+        .filter((fragment): fragment is DualRenderFragment => fragment !== null);
+      const positions = new Set(fragments.map((fragment) => fragment.position));
+
+      if (fragments.length === 2 && !hasDualRegionPair(positions)) {
+        this.reportConfigurationWarning(
+          'dual 構成の region 属性は "top" と "bottom"、または "left" と "right" を 1 つずつ指定してください。',
+        );
+      }
+
+      return fragments.map(({ position: _, ...fragment }) => fragment);
     }
 
     if (elements.length === 4) {
-      return elements
-        .map((el): RenderFragment | null => {
-          const quadrant = el.getAttribute("region") as QuadCompositeQuadrant | null;
-          const placement = el.getAttribute("placement") as PlacementMode | null;
-          if (!quadrant || !placement) {
+      const fragments = elements
+        .map((el, index): QuadRenderFragment | null => {
+          const quadrant = el.getAttribute("region");
+          const placement = el.getAttribute("placement");
+          if (!quadrant) {
+            this.reportFragmentAttributeWarning(index, "region", "region 属性は必須です。");
             return null;
           }
+          if (!placement) {
+            this.reportFragmentAttributeWarning(index, "placement", "placement 属性は必須です。");
+            return null;
+          }
+
+          const glyph = el.getAttribute("glyph");
+          if (glyph === null) {
+            this.reportFragmentAttributeWarning(index, "glyph", "glyph 属性は必須です。");
+          }
+          if (!isOneOf(quadrant, QUAD_QUADRANTS)) {
+            this.reportFragmentAttributeWarning(
+              index,
+              "region",
+              `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${quadrant}"。`,
+            );
+          }
+          if (!isOneOf(placement, PLACEMENT_MODES)) {
+            this.reportFragmentAttributeWarning(
+              index,
+              "placement",
+              `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${placement}"。`,
+            );
+          }
+
           const crossed = placement === "opposite-side";
           return {
-            glyph: el.getAttribute("glyph") ?? "",
+            glyph: glyph ?? "",
             layout: "quad",
-            clip: crossed ? OPPOSITE_QUADRANT[quadrant] : quadrant,
+            clip: crossed ? OPPOSITE_QUADRANT[quadrant as QuadCompositeQuadrant] : quadrant,
             place: crossed ? quadrant : null,
+            quadrant,
           };
         })
-        .filter((f): f is RenderFragment => f !== null);
+        .filter((fragment): fragment is QuadRenderFragment => fragment !== null);
+      const quadrants = new Set(fragments.map((fragment) => fragment.quadrant));
+
+      if (fragments.length === 4 && quadrants.size !== QUAD_QUADRANTS.length) {
+        this.reportConfigurationWarning(
+          'quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" を 1 つずつ指定してください。',
+        );
+      }
+
+      return fragments.map(({ quadrant: _, ...fragment }) => fragment);
     }
 
+    this.reportConfigurationWarning(
+      `子要素数は 2 または 4 である必要があります。現在は ${elements.length} 個です。`,
+    );
     return [];
+  }
+
+  private reportFragmentAttributeWarning(
+    index: number,
+    attributeName: string,
+    message: string,
+  ): void {
+    this.reportConfigurationWarning(
+      `${index + 1} 番目の <gojibake-glyph-fragment> の ${attributeName} 属性が不正です。${message}`,
+    );
+  }
+
+  private reportConfigurationWarning(message: string): void {
+    console.warn(`<gojibake-glyph>: ${message}`);
   }
 }
