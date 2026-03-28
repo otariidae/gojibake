@@ -1,4 +1,5 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
+import type { GojibakeGlyphLayout } from "./gojibake-glyph-element.js";
 
 type AttributeValidationRule = {
   attributeName: string;
@@ -54,37 +55,38 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
   }
 
   public get region(): FragmentRegion | null {
-    const layout = this.resolveCompositeLayout();
+    const layout = this.resolveParentLayout();
 
-    switch (layout) {
-      case "dual":
-        return this.readValidatedAttribute({
-          attributeName: "region",
-          allowEmpty: false,
-          choices: DUAL_FRAGMENT_REGIONS,
-          createInvalidMessage(value: string): string {
-            return `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${value}"。`;
-          },
-        });
-      case "quad":
-        return this.readValidatedAttribute({
-          attributeName: "region",
-          allowEmpty: false,
-          choices: QUAD_FRAGMENT_REGIONS,
-          createInvalidMessage(value: string): string {
-            return `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${value}"。`;
-          },
-        });
-      default:
-        return this.readValidatedAttribute({
-          attributeName: "region",
-          allowEmpty: false,
-          choices: ALL_FRAGMENT_REGIONS,
-          createInvalidMessage(value: string): string {
-            return `region 属性は "top"・"bottom"・"left"・"right"・"top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${value}"。`;
-          },
-        });
+    if (layout === "dual") {
+      return this.readValidatedAttribute({
+        attributeName: "region",
+        allowEmpty: false,
+        choices: DUAL_FRAGMENT_REGIONS,
+        createInvalidMessage(value: string): string {
+          return `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${value}"。`;
+        },
+      });
     }
+
+    if (layout === "quad") {
+      return this.readValidatedAttribute({
+        attributeName: "region",
+        allowEmpty: false,
+        choices: QUAD_FRAGMENT_REGIONS,
+        createInvalidMessage(value: string): string {
+          return `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${value}"。`;
+        },
+      });
+    }
+
+    return this.readValidatedAttribute({
+      attributeName: "region",
+      allowEmpty: false,
+      choices: ALL_FRAGMENT_REGIONS,
+      createInvalidMessage(value: string): string {
+        return `region 属性は "top"・"bottom"・"left"・"right"・"top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${value}"。`;
+      },
+    });
   }
 
   public get placement(): PlacementMode | null {
@@ -98,23 +100,19 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
     });
   }
 
-  private resolveCompositeLayout(): "dual" | "quad" | null {
+  private resolveParentLayout(): GojibakeGlyphLayout {
     const parent = this.parentElement;
 
-    if (parent?.tagName !== "GOJIBAKE-GLYPH") {
+    if (
+      parent?.tagName !== "GOJIBAKE-GLYPH" ||
+      !("layout" in parent) ||
+      typeof parent.layout !== "string"
+    ) {
       return null;
     }
 
-    const fragmentCount = Array.from(parent.children).filter(
-      (node) => node.tagName === this.tagName,
-    ).length;
-
-    if (fragmentCount === 2) {
-      return "dual";
-    }
-
-    if (fragmentCount === 4) {
-      return "quad";
+    if (parent.layout === "dual" || parent.layout === "quad") {
+      return parent.layout;
     }
 
     return null;
