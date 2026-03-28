@@ -28,6 +28,22 @@ type CompositeRenderFragment<
   region: TRegion;
 };
 
+type AttributeValidationRule = {
+  attributeName: string;
+  required?: boolean;
+  allowEmpty?: boolean;
+};
+
+type EnumeratedAttributeValidationRule<T extends string> = AttributeValidationRule & {
+  choices: readonly T[];
+  createInvalidMessage: (value: string) => string;
+};
+
+type FreeformAttributeValidationRule = AttributeValidationRule & {
+  choices?: undefined;
+  createInvalidMessage?: undefined;
+};
+
 const FRAGMENT_TAG_NAME = "GOJIBAKE-GLYPH-FRAGMENT";
 const DUAL_POSITIONS = ["top", "bottom", "left", "right"] as const;
 const QUAD_QUADRANTS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
@@ -142,6 +158,12 @@ SHADOW_STYLESHEET.replaceSync(SHADOW_CSS);
 
 function isOneOf<T extends string>(value: string, choices: readonly T[]): value is T {
   return choices.includes(value as T);
+}
+
+function hasChoices<T extends string>(
+  rule: FreeformAttributeValidationRule | EnumeratedAttributeValidationRule<T>,
+): rule is EnumeratedAttributeValidationRule<T> {
+  return rule.choices !== undefined;
 }
 
 function hasDualRegionPair(regions: Set<string>): boolean {
@@ -332,39 +354,31 @@ export class GojibakeGlyphElement extends HTMLElement {
   }): CompositeRenderFragment<TLayout, TRegion>[] {
     return elements
       .map((element, index): CompositeRenderFragment<TLayout, TRegion> | null => {
-        const rawRegion = this.readRequiredNonEmptyAttribute(element, index, "region");
-        if (rawRegion === null) {
-          return null;
-        }
-
-        const rawPlacement = this.readRequiredNonEmptyAttribute(element, index, "placement");
-        if (rawPlacement === null) {
-          return null;
-        }
-
-        const glyph = this.readRequiredAttribute(element, index, "glyph");
+        const glyph = this.readValidatedAttribute(element, index, {
+          attributeName: "glyph",
+        });
         if (glyph === null) {
           return null;
         }
 
-        const region = this.readEnumAttribute(
-          index,
-          "region",
-          rawRegion,
-          validRegions,
-          createInvalidRegionMessage(rawRegion),
-        );
+        const region = this.readValidatedAttribute(element, index, {
+          attributeName: "region",
+          allowEmpty: false,
+          choices: validRegions,
+          createInvalidMessage: createInvalidRegionMessage,
+        });
         if (region === null) {
           return null;
         }
 
-        const placement = this.readEnumAttribute(
-          index,
-          "placement",
-          rawPlacement,
-          PLACEMENT_MODES,
-          `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${rawPlacement}"。`,
-        );
+        const placement = this.readValidatedAttribute(element, index, {
+          attributeName: "placement",
+          allowEmpty: false,
+          choices: PLACEMENT_MODES,
+          createInvalidMessage(value: string): string {
+            return `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${value}"。`;
+          },
+        });
         if (placement === null) {
           return null;
         }
@@ -403,13 +417,29 @@ export class GojibakeGlyphElement extends HTMLElement {
     };
   }
 
-  private readRequiredNonEmptyAttribute(
+  private readValidatedAttribute<T extends string>(
     element: HTMLElement,
     index: number,
-    attributeName: string,
-  ): string | null {
+    rule: FreeformAttributeValidationRule,
+  ): string | null;
+  private readValidatedAttribute<T extends string>(
+    element: HTMLElement,
+    index: number,
+    rule: EnumeratedAttributeValidationRule<T>,
+  ): T | null;
+  private readValidatedAttribute<T extends string>(
+    element: HTMLElement,
+    index: number,
+    rule: FreeformAttributeValidationRule | EnumeratedAttributeValidationRule<T>,
+  ): string | T | null {
+    const { attributeName, required = true, allowEmpty = true } = rule;
     const value = element.getAttribute(attributeName);
-    if (!value) {
+
+    if (value === null || (!allowEmpty && value === "")) {
+      if (!required) {
+        return null;
+      }
+
       this.reportFragmentAttributeWarning(
         index,
         attributeName,
@@ -418,36 +448,12 @@ export class GojibakeGlyphElement extends HTMLElement {
       return null;
     }
 
-    return value;
-  }
-
-  private readRequiredAttribute(
-    element: HTMLElement,
-    index: number,
-    attributeName: string,
-  ): string | null {
-    const value = element.getAttribute(attributeName);
-    if (value === null) {
+    if (hasChoices(rule) && !isOneOf(value, rule.choices)) {
       this.reportFragmentAttributeWarning(
         index,
-        attributeName,
-        `${attributeName} 属性は必須です。`,
+        rule.attributeName,
+        rule.createInvalidMessage(value),
       );
-      return null;
-    }
-
-    return value;
-  }
-
-  private readEnumAttribute<T extends string>(
-    index: number,
-    attributeName: string,
-    value: string,
-    choices: readonly T[],
-    invalidMessage: string,
-  ): T | null {
-    if (!isOneOf(value, choices)) {
-      this.reportFragmentAttributeWarning(index, attributeName, invalidMessage);
       return null;
     }
 
