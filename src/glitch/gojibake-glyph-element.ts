@@ -18,6 +18,32 @@ type QuadRenderFragment = RenderFragment & {
   quadrant: string;
 };
 
+type PlacementMode = (typeof PLACEMENT_MODES)[number];
+
+type CompositeRenderFragment<
+  TLayout extends RenderFragment["layout"],
+  TRegion extends string,
+> = RenderFragment & {
+  layout: TLayout;
+  region: TRegion;
+};
+
+type AttributeValidationRule = {
+  attributeName: string;
+  required?: boolean;
+  allowEmpty?: boolean;
+};
+
+type EnumeratedAttributeValidationRule<T extends string> = AttributeValidationRule & {
+  choices: readonly T[];
+  createInvalidMessage: (value: string) => string;
+};
+
+type FreeformAttributeValidationRule = AttributeValidationRule & {
+  choices?: undefined;
+  createInvalidMessage?: undefined;
+};
+
 const FRAGMENT_TAG_NAME = "GOJIBAKE-GLYPH-FRAGMENT";
 const DUAL_POSITIONS = ["top", "bottom", "left", "right"] as const;
 const QUAD_QUADRANTS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
@@ -134,6 +160,12 @@ function isOneOf<T extends string>(value: string, choices: readonly T[]): value 
   return choices.includes(value as T);
 }
 
+function hasChoices<T extends string>(
+  rule: FreeformAttributeValidationRule | EnumeratedAttributeValidationRule<T>,
+): rule is EnumeratedAttributeValidationRule<T> {
+  return rule.choices !== undefined;
+}
+
 function hasDualRegionPair(regions: Set<string>): boolean {
   return (
     (regions.has("top") && regions.has("bottom")) || (regions.has("left") && regions.has("right"))
@@ -206,67 +238,13 @@ export class GojibakeGlyphElement extends HTMLElement {
    * 不正な構成は現段階では描画挙動を変えず、警告だけを出す。
    */
   private readRenderFragments(): RenderFragment[] {
-    const children = Array.from(this.children);
-
-    for (const node of children) {
-      if (node.tagName !== FRAGMENT_TAG_NAME) {
-        this.reportConfigurationWarning(
-          `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> はサポートしていません。`,
-        );
-        return [];
-      }
+    const elements = this.readFragmentElements();
+    if (elements === null) {
+      return [];
     }
 
-    const elements = children.filter(
-      (node): node is HTMLElement => node.tagName === FRAGMENT_TAG_NAME,
-    );
-
     if (elements.length === 2) {
-      const fragments = elements
-        .map((el, index): DualRenderFragment | null => {
-          const position = el.getAttribute("region");
-          const placement = el.getAttribute("placement");
-          if (!position) {
-            this.reportFragmentAttributeWarning(index, "region", "region 属性は必須です。");
-            return null;
-          }
-          if (!placement) {
-            this.reportFragmentAttributeWarning(index, "placement", "placement 属性は必須です。");
-            return null;
-          }
-
-          const glyph = el.getAttribute("glyph");
-          if (glyph === null) {
-            this.reportFragmentAttributeWarning(index, "glyph", "glyph 属性は必須です。");
-            return null;
-          }
-          if (!isOneOf(position, DUAL_POSITIONS)) {
-            this.reportFragmentAttributeWarning(
-              index,
-              "region",
-              `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${position}"。`,
-            );
-            return null;
-          }
-          if (!isOneOf(placement, PLACEMENT_MODES)) {
-            this.reportFragmentAttributeWarning(
-              index,
-              "placement",
-              `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${placement}"。`,
-            );
-            return null;
-          }
-
-          const crossed = placement === "opposite-side";
-          return {
-            glyph,
-            layout: "dual",
-            clip: crossed ? OPPOSITE_POSITION[position] : position,
-            place: crossed ? position : null,
-            position,
-          };
-        })
-        .filter((fragment): fragment is DualRenderFragment => fragment !== null);
+      const fragments = this.readDualRenderFragments(elements);
 
       if (fragments.length !== 2) {
         return [];
@@ -285,51 +263,7 @@ export class GojibakeGlyphElement extends HTMLElement {
     }
 
     if (elements.length === 4) {
-      const fragments = elements
-        .map((el, index): QuadRenderFragment | null => {
-          const quadrant = el.getAttribute("region");
-          const placement = el.getAttribute("placement");
-          if (!quadrant) {
-            this.reportFragmentAttributeWarning(index, "region", "region 属性は必須です。");
-            return null;
-          }
-          if (!placement) {
-            this.reportFragmentAttributeWarning(index, "placement", "placement 属性は必須です。");
-            return null;
-          }
-
-          const glyph = el.getAttribute("glyph");
-          if (glyph === null) {
-            this.reportFragmentAttributeWarning(index, "glyph", "glyph 属性は必須です。");
-            return null;
-          }
-          if (!isOneOf(quadrant, QUAD_QUADRANTS)) {
-            this.reportFragmentAttributeWarning(
-              index,
-              "region",
-              `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${quadrant}"。`,
-            );
-            return null;
-          }
-          if (!isOneOf(placement, PLACEMENT_MODES)) {
-            this.reportFragmentAttributeWarning(
-              index,
-              "placement",
-              `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${placement}"。`,
-            );
-            return null;
-          }
-
-          const crossed = placement === "opposite-side";
-          return {
-            glyph,
-            layout: "quad",
-            clip: crossed ? OPPOSITE_QUADRANT[quadrant] : quadrant,
-            place: crossed ? quadrant : null,
-            quadrant,
-          };
-        })
-        .filter((fragment): fragment is QuadRenderFragment => fragment !== null);
+      const fragments = this.readQuadRenderFragments(elements);
 
       if (fragments.length !== 4) {
         return [];
@@ -351,6 +285,179 @@ export class GojibakeGlyphElement extends HTMLElement {
       `子要素数は 2 または 4 である必要があります。現在は ${elements.length} 個です。`,
     );
     return [];
+  }
+
+  private readFragmentElements(): HTMLElement[] | null {
+    const children = Array.from(this.children);
+
+    for (const node of children) {
+      if (node.tagName !== FRAGMENT_TAG_NAME) {
+        this.reportConfigurationWarning(
+          `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> はサポートしていません。`,
+        );
+        return null;
+      }
+    }
+
+    return children.filter((node): node is HTMLElement => node.tagName === FRAGMENT_TAG_NAME);
+  }
+
+  private readDualRenderFragments(elements: HTMLElement[]): DualRenderFragment[] {
+    const fragments = this.readCompositeRenderFragments({
+      elements,
+      layout: "dual",
+      validRegions: DUAL_POSITIONS,
+      oppositeRegions: OPPOSITE_POSITION,
+      createInvalidRegionMessage(position: string): string {
+        return `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${position}"。`;
+      },
+    });
+
+    return fragments.map((fragment) => ({
+      ...fragment,
+      position: fragment.region,
+    }));
+  }
+
+  private readQuadRenderFragments(elements: HTMLElement[]): QuadRenderFragment[] {
+    const fragments = this.readCompositeRenderFragments({
+      elements,
+      layout: "quad",
+      validRegions: QUAD_QUADRANTS,
+      oppositeRegions: OPPOSITE_QUADRANT,
+      createInvalidRegionMessage(quadrant: string): string {
+        return `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${quadrant}"。`;
+      },
+    });
+
+    return fragments.map((fragment) => ({
+      ...fragment,
+      quadrant: fragment.region,
+    }));
+  }
+
+  private readCompositeRenderFragments<
+    TLayout extends RenderFragment["layout"],
+    TRegion extends string,
+  >({
+    elements,
+    layout,
+    validRegions,
+    oppositeRegions,
+    createInvalidRegionMessage,
+  }: {
+    elements: HTMLElement[];
+    layout: TLayout;
+    validRegions: readonly TRegion[];
+    oppositeRegions: Record<TRegion, TRegion>;
+    createInvalidRegionMessage: (value: string) => string;
+  }): CompositeRenderFragment<TLayout, TRegion>[] {
+    return elements
+      .map((element, index): CompositeRenderFragment<TLayout, TRegion> | null => {
+        const glyph = this.readValidatedAttribute(element, index, {
+          attributeName: "glyph",
+        });
+        if (glyph === null) {
+          return null;
+        }
+
+        const region = this.readValidatedAttribute(element, index, {
+          attributeName: "region",
+          allowEmpty: false,
+          choices: validRegions,
+          createInvalidMessage: createInvalidRegionMessage,
+        });
+        if (region === null) {
+          return null;
+        }
+
+        const placement = this.readValidatedAttribute(element, index, {
+          attributeName: "placement",
+          allowEmpty: false,
+          choices: PLACEMENT_MODES,
+          createInvalidMessage(value: string): string {
+            return `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${value}"。`;
+          },
+        });
+        if (placement === null) {
+          return null;
+        }
+
+        return this.createCompositeRenderFragment(
+          layout,
+          glyph,
+          region,
+          placement,
+          oppositeRegions,
+        );
+      })
+      .filter(
+        (fragment): fragment is CompositeRenderFragment<TLayout, TRegion> => fragment !== null,
+      );
+  }
+
+  private createCompositeRenderFragment<
+    TLayout extends RenderFragment["layout"],
+    TRegion extends string,
+  >(
+    layout: TLayout,
+    glyph: string,
+    region: TRegion,
+    placement: PlacementMode,
+    oppositeRegions: Record<TRegion, TRegion>,
+  ): CompositeRenderFragment<TLayout, TRegion> {
+    const crossed = placement === "opposite-side";
+
+    return {
+      glyph,
+      layout,
+      clip: crossed ? oppositeRegions[region] : region,
+      place: crossed ? region : null,
+      region,
+    };
+  }
+
+  private readValidatedAttribute<T extends string>(
+    element: HTMLElement,
+    index: number,
+    rule: FreeformAttributeValidationRule,
+  ): string | null;
+  private readValidatedAttribute<T extends string>(
+    element: HTMLElement,
+    index: number,
+    rule: EnumeratedAttributeValidationRule<T>,
+  ): T | null;
+  private readValidatedAttribute<T extends string>(
+    element: HTMLElement,
+    index: number,
+    rule: FreeformAttributeValidationRule | EnumeratedAttributeValidationRule<T>,
+  ): string | T | null {
+    const { attributeName, required = true, allowEmpty = true } = rule;
+    const value = element.getAttribute(attributeName);
+
+    if (value === null || (!allowEmpty && value === "")) {
+      if (!required) {
+        return null;
+      }
+
+      this.reportFragmentAttributeWarning(
+        index,
+        attributeName,
+        `${attributeName} 属性は必須です。`,
+      );
+      return null;
+    }
+
+    if (hasChoices(rule) && !isOneOf(value, rule.choices)) {
+      this.reportFragmentAttributeWarning(
+        index,
+        rule.attributeName,
+        rule.createInvalidMessage(value),
+      );
+      return null;
+    }
+
+    return value;
   }
 
   private reportFragmentAttributeWarning(
