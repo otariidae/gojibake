@@ -1,5 +1,5 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
-import type { GojibakeGlyphLayout } from "./gojibake-glyph-element.js";
+import type { GojibakeGlyphElement, GojibakeGlyphLayout } from "./gojibake-glyph-element.js";
 
 type AttributeValidationRule = {
   attributeName: string;
@@ -54,6 +54,16 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
     });
   }
 
+  public get parentGlyph(): GojibakeGlyphElement | null {
+    const parent = this.parentElement;
+
+    if (parent?.tagName !== "GOJIBAKE-GLYPH") {
+      return null;
+    }
+
+    return parent as GojibakeGlyphElement;
+  }
+
   public get region(): FragmentRegion | null {
     const layout = this.resolveParentLayout();
 
@@ -101,21 +111,13 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
   }
 
   private resolveParentLayout(): GojibakeGlyphLayout {
-    const parent = this.parentElement;
+    const parent = this.parentGlyph;
 
-    if (
-      parent?.tagName !== "GOJIBAKE-GLYPH" ||
-      !("layout" in parent) ||
-      typeof parent.layout !== "string"
-    ) {
+    if (parent === null) {
       return null;
     }
 
-    if (parent.layout === "dual" || parent.layout === "quad") {
-      return parent.layout;
-    }
-
-    return null;
+    return parent.layout;
   }
 
   private readValidatedAttribute<T extends string>(
