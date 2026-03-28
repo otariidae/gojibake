@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
-import { installDom } from "./test-support/install-dom";
-
-installDom();
-
-const { GojibakeGlyphElement } = await import("./gojibake-glyph-element.ts");
-const { GojibakeGlyphFragmentElement } = await import("./gojibake-glyph-fragment-element.ts");
+import { GojibakeGlyphElement } from "./gojibake-glyph-element.ts";
+import { GojibakeGlyphFragmentElement } from "./gojibake-glyph-fragment-element.ts";
 
 if (!customElements.get("gojibake-glyph-fragment")) {
   customElements.define("gojibake-glyph-fragment", GojibakeGlyphFragmentElement);
