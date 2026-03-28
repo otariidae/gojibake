@@ -50,6 +50,10 @@ const SHADOW_CSS = `
   opacity: 0;
 }
 
+.base--fallback {
+  opacity: 1;
+}
+
 .fragment {
   --shift-x: 0em;
   --shift-y: 0em;
@@ -168,15 +172,19 @@ export class GojibakeGlyphElement extends HTMLElement {
 
   private render(): void {
     const baseChar = this.textContent ?? "";
+    const fragments = this.readRenderFragments();
 
     const base = document.createElement("span");
     base.className = "base";
+    if (fragments.length === 0) {
+      base.classList.add("base--fallback");
+    }
     base.textContent = baseChar === " " ? "\u00a0" : baseChar;
 
     const df = document.createDocumentFragment();
     df.appendChild(base);
 
-    for (const fragment of this.readRenderFragments()) {
+    for (const fragment of fragments) {
       const span = document.createElement("span");
       span.className = "fragment";
       span.dataset.layout = fragment.layout;
@@ -203,8 +211,9 @@ export class GojibakeGlyphElement extends HTMLElement {
     for (const node of children) {
       if (node.tagName !== FRAGMENT_TAG_NAME) {
         this.reportConfigurationWarning(
-          `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> は無視されます。`,
+          `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> はサポートしていません。`,
         );
+        return [];
       }
     }
 
@@ -229,6 +238,7 @@ export class GojibakeGlyphElement extends HTMLElement {
           const glyph = el.getAttribute("glyph");
           if (glyph === null) {
             this.reportFragmentAttributeWarning(index, "glyph", "glyph 属性は必須です。");
+            return null;
           }
           if (!isOneOf(position, DUAL_POSITIONS)) {
             this.reportFragmentAttributeWarning(
@@ -236,6 +246,7 @@ export class GojibakeGlyphElement extends HTMLElement {
               "region",
               `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${position}"。`,
             );
+            return null;
           }
           if (!isOneOf(placement, PLACEMENT_MODES)) {
             this.reportFragmentAttributeWarning(
@@ -243,24 +254,31 @@ export class GojibakeGlyphElement extends HTMLElement {
               "placement",
               `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${placement}"。`,
             );
+            return null;
           }
 
           const crossed = placement === "opposite-side";
           return {
-            glyph: glyph ?? "",
+            glyph,
             layout: "dual",
-            clip: crossed ? OPPOSITE_POSITION[position as DualCompositePosition] : position,
+            clip: crossed ? OPPOSITE_POSITION[position] : position,
             place: crossed ? position : null,
             position,
           };
         })
         .filter((fragment): fragment is DualRenderFragment => fragment !== null);
+
+      if (fragments.length !== 2) {
+        return [];
+      }
+
       const positions = new Set(fragments.map((fragment) => fragment.position));
 
-      if (fragments.length === 2 && !hasDualRegionPair(positions)) {
+      if (!hasDualRegionPair(positions)) {
         this.reportConfigurationWarning(
           'dual 構成の region 属性は "top" と "bottom"、または "left" と "right" を 1 つずつ指定してください。',
         );
+        return [];
       }
 
       return fragments.map(({ position: _, ...fragment }) => fragment);
@@ -283,6 +301,7 @@ export class GojibakeGlyphElement extends HTMLElement {
           const glyph = el.getAttribute("glyph");
           if (glyph === null) {
             this.reportFragmentAttributeWarning(index, "glyph", "glyph 属性は必須です。");
+            return null;
           }
           if (!isOneOf(quadrant, QUAD_QUADRANTS)) {
             this.reportFragmentAttributeWarning(
@@ -290,6 +309,7 @@ export class GojibakeGlyphElement extends HTMLElement {
               "region",
               `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${quadrant}"。`,
             );
+            return null;
           }
           if (!isOneOf(placement, PLACEMENT_MODES)) {
             this.reportFragmentAttributeWarning(
@@ -297,24 +317,31 @@ export class GojibakeGlyphElement extends HTMLElement {
               "placement",
               `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${placement}"。`,
             );
+            return null;
           }
 
           const crossed = placement === "opposite-side";
           return {
-            glyph: glyph ?? "",
+            glyph,
             layout: "quad",
-            clip: crossed ? OPPOSITE_QUADRANT[quadrant as QuadCompositeQuadrant] : quadrant,
+            clip: crossed ? OPPOSITE_QUADRANT[quadrant] : quadrant,
             place: crossed ? quadrant : null,
             quadrant,
           };
         })
         .filter((fragment): fragment is QuadRenderFragment => fragment !== null);
+
+      if (fragments.length !== 4) {
+        return [];
+      }
+
       const quadrants = new Set(fragments.map((fragment) => fragment.quadrant));
 
-      if (fragments.length === 4 && quadrants.size !== QUAD_QUADRANTS.length) {
+      if (quadrants.size !== QUAD_QUADRANTS.length) {
         this.reportConfigurationWarning(
           'quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" を 1 つずつ指定してください。',
         );
+        return [];
       }
 
       return fragments.map(({ quadrant: _, ...fragment }) => fragment);
