@@ -6,6 +6,8 @@ import {
   QUAD_FRAGMENT_REGIONS,
 } from "./gojibake-glyph-fragment-element.js";
 
+export type GojibakeGlyphLayout = "dual" | "quad" | null;
+
 /** span 生成直前の正規化済みフラグメント */
 type RenderFragment = {
   glyph: string;
@@ -181,6 +183,27 @@ export class GojibakeGlyphElement extends HTMLElement {
     this.render();
   }
 
+  public get fragments(): GojibakeGlyphFragmentElement[] {
+    return Array.from(this.children).filter(
+      (node): node is GojibakeGlyphFragmentElement =>
+        node.tagName === FRAGMENT_TAG_NAME && node instanceof GojibakeGlyphFragmentElement,
+    );
+  }
+
+  public get layout(): GojibakeGlyphLayout {
+    const fragmentCount = this.fragments.length;
+
+    if (fragmentCount === 2) {
+      return "dual";
+    }
+
+    if (fragmentCount === 4) {
+      return "quad";
+    }
+
+    return null;
+  }
+
   private render(): void {
     const baseChar = this.textContent ?? "";
     const fragments = this.readRenderFragments();
@@ -222,7 +245,7 @@ export class GojibakeGlyphElement extends HTMLElement {
       return [];
     }
 
-    if (elements.length === 2) {
+    if (this.layout === "dual") {
       const fragments = this.readDualRenderFragments(elements);
 
       if (fragments.length !== 2) {
@@ -241,7 +264,7 @@ export class GojibakeGlyphElement extends HTMLElement {
       return fragments.map(({ position: _, ...fragment }) => fragment);
     }
 
-    if (elements.length === 4) {
+    if (this.layout === "quad") {
       const fragments = this.readQuadRenderFragments(elements);
 
       if (fragments.length !== 4) {
@@ -267,9 +290,7 @@ export class GojibakeGlyphElement extends HTMLElement {
   }
 
   private readFragmentElements(): GojibakeGlyphFragmentElement[] | null {
-    const children = Array.from(this.children);
-
-    for (const node of children) {
+    for (const node of Array.from(this.children)) {
       if (node.tagName !== FRAGMENT_TAG_NAME) {
         this.reportConfigurationWarning(
           `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> はサポートしていません。`,
@@ -278,10 +299,7 @@ export class GojibakeGlyphElement extends HTMLElement {
       }
     }
 
-    return children.filter(
-      (node): node is GojibakeGlyphFragmentElement =>
-        node.tagName === FRAGMENT_TAG_NAME && node instanceof GojibakeGlyphFragmentElement,
-    );
+    return this.fragments;
   }
 
   private readDualRenderFragments(elements: GojibakeGlyphFragmentElement[]): DualRenderFragment[] {
@@ -334,7 +352,11 @@ export class GojibakeGlyphElement extends HTMLElement {
         }
 
         const region = element.region;
-        if (region === null || !isOneOf(region, validRegions)) {
+        if (region === null) {
+          return null;
+        }
+
+        if (!isOneOf(region, validRegions)) {
           return null;
         }
 
