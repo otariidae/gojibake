@@ -4,6 +4,16 @@ import type {
   QuadCompositeQuadrant,
 } from "./composite-effect-builder.js";
 
+/** span 生成直前の正規化済みフラグメント */
+type RenderFragment = {
+  glyph: string;
+  layout: "dual" | "quad";
+  /** data-clip に流し込む値 */
+  clip: string;
+  /** data-place に流し込む値。same-side のときは null */
+  place: string | null;
+};
+
 const OPPOSITE_POSITION: Record<DualCompositePosition, DualCompositePosition> = {
   top: "bottom",
   bottom: "top",
@@ -107,18 +117,6 @@ const SHADOW_STYLESHEET = new CSSStyleSheet();
 
 SHADOW_STYLESHEET.replaceSync(SHADOW_CSS);
 
-type DualFragmentAttributes = {
-  glyph: string;
-  position: DualCompositePosition;
-  placement: PlacementMode;
-};
-
-type QuadFragmentAttributes = {
-  glyph: string;
-  quadrant: QuadCompositeQuadrant;
-  placement: PlacementMode;
-};
-
 /**
  * composite（dual / quad）グリッチ効果を表示するカスタム要素。
  *
@@ -151,7 +149,6 @@ export class GojibakeGlyphElement extends HTMLElement {
 
   private render(): void {
     const baseChar = this.textContent ?? "";
-    const fragmentElements = this.readFragmentElements();
 
     const base = document.createElement("span");
     base.className = "base";
@@ -160,84 +157,68 @@ export class GojibakeGlyphElement extends HTMLElement {
     const df = document.createDocumentFragment();
     df.appendChild(base);
 
-    if (fragmentElements.length === 2) {
-      for (const fragment of this.readDualFragments()) {
-        const crossed = fragment.placement === "opposite-side";
-        const clip = crossed ? OPPOSITE_POSITION[fragment.position] : fragment.position;
-        const place = crossed ? fragment.position : null;
-
-        const span = document.createElement("span");
-        span.className = "fragment";
-        span.dataset.layout = "dual";
-        span.dataset.clip = clip;
-        if (place) {
-          span.dataset.place = place;
-        }
-        span.textContent = fragment.glyph;
-        df.appendChild(span);
+    for (const fragment of this.readRenderFragments()) {
+      const span = document.createElement("span");
+      span.className = "fragment";
+      span.dataset.layout = fragment.layout;
+      span.dataset.clip = fragment.clip;
+      if (fragment.place !== null) {
+        span.dataset.place = fragment.place;
       }
-    } else if (fragmentElements.length === 4) {
-      for (const fragment of this.readQuadFragments()) {
-        const crossed = fragment.placement === "opposite-side";
-        const clip = crossed ? OPPOSITE_QUADRANT[fragment.quadrant] : fragment.quadrant;
-        const place = crossed ? fragment.quadrant : null;
-
-        const span = document.createElement("span");
-        span.className = "fragment";
-        span.dataset.layout = "quad";
-        span.dataset.clip = clip;
-        if (place) {
-          span.dataset.place = place;
-        }
-        span.textContent = fragment.glyph;
-        df.appendChild(span);
-      }
+      span.textContent = fragment.glyph;
+      df.appendChild(span);
     }
 
     this.shadow.replaceChildren(df);
   }
 
-  private readFragmentElements(): HTMLElement[] {
-    return Array.from(this.children).filter(
+  /**
+   * 子要素を読み取り、span 生成に必要な情報へ正規化する。
+   * 子要素数が 2 なら dual、4 なら quad として扱う。それ以外は空配列を返す。
+   */
+  private readRenderFragments(): RenderFragment[] {
+    const elements = Array.from(this.children).filter(
       (node): node is HTMLElement => node.tagName === "GOJIBAKE-GLYPH-FRAGMENT",
     );
-  }
 
-  private readDualFragments(): DualFragmentAttributes[] {
-    return this.readFragmentElements()
-      .map((fragment) => {
-        const position = fragment.getAttribute("region") as DualCompositePosition | null;
-        const placement = fragment.getAttribute("placement") as PlacementMode | null;
+    if (elements.length === 2) {
+      return elements
+        .map((el): RenderFragment | null => {
+          const position = el.getAttribute("region") as DualCompositePosition | null;
+          const placement = el.getAttribute("placement") as PlacementMode | null;
+          if (!position || !placement) {
+            return null;
+          }
+          const crossed = placement === "opposite-side";
+          return {
+            glyph: el.getAttribute("glyph") ?? "",
+            layout: "dual",
+            clip: crossed ? OPPOSITE_POSITION[position] : position,
+            place: crossed ? position : null,
+          };
+        })
+        .filter((f): f is RenderFragment => f !== null);
+    }
 
-        if (!position || !placement) {
-          return null;
-        }
+    if (elements.length === 4) {
+      return elements
+        .map((el): RenderFragment | null => {
+          const quadrant = el.getAttribute("region") as QuadCompositeQuadrant | null;
+          const placement = el.getAttribute("placement") as PlacementMode | null;
+          if (!quadrant || !placement) {
+            return null;
+          }
+          const crossed = placement === "opposite-side";
+          return {
+            glyph: el.getAttribute("glyph") ?? "",
+            layout: "quad",
+            clip: crossed ? OPPOSITE_QUADRANT[quadrant] : quadrant,
+            place: crossed ? quadrant : null,
+          };
+        })
+        .filter((f): f is RenderFragment => f !== null);
+    }
 
-        return {
-          glyph: fragment.getAttribute("glyph") ?? "",
-          position,
-          placement,
-        };
-      })
-      .filter((fragment): fragment is DualFragmentAttributes => fragment !== null);
-  }
-
-  private readQuadFragments(): QuadFragmentAttributes[] {
-    return this.readFragmentElements()
-      .map((fragment) => {
-        const quadrant = fragment.getAttribute("region") as QuadCompositeQuadrant | null;
-        const placement = fragment.getAttribute("placement") as PlacementMode | null;
-
-        if (!quadrant || !placement) {
-          return null;
-        }
-
-        return {
-          glyph: fragment.getAttribute("glyph") ?? "",
-          quadrant,
-          placement,
-        };
-      })
-      .filter((fragment): fragment is QuadFragmentAttributes => fragment !== null);
+    return [];
   }
 }
