@@ -1,4 +1,10 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
+import {
+  DUAL_FRAGMENT_REGIONS,
+  GojibakeGlyphFragmentElement,
+  type PlacementMode,
+  QUAD_FRAGMENT_REGIONS,
+} from "./gojibake-glyph-fragment-element.js";
 
 /** span 生成直前の正規化済みフラグメント */
 type RenderFragment = {
@@ -11,14 +17,12 @@ type RenderFragment = {
 };
 
 type DualRenderFragment = RenderFragment & {
-  position: string;
+  position: DualCompositePosition;
 };
 
 type QuadRenderFragment = RenderFragment & {
-  quadrant: string;
+  quadrant: QuadCompositeQuadrant;
 };
-
-type PlacementMode = (typeof PLACEMENT_MODES)[number];
 
 type CompositeRenderFragment<
   TLayout extends RenderFragment["layout"],
@@ -28,26 +32,7 @@ type CompositeRenderFragment<
   region: TRegion;
 };
 
-type AttributeValidationRule = {
-  attributeName: string;
-  required?: boolean;
-  allowEmpty?: boolean;
-};
-
-type EnumeratedAttributeValidationRule<T extends string> = AttributeValidationRule & {
-  choices: readonly T[];
-  createInvalidMessage: (value: string) => string;
-};
-
-type FreeformAttributeValidationRule = AttributeValidationRule & {
-  choices?: undefined;
-  createInvalidMessage?: undefined;
-};
-
 const FRAGMENT_TAG_NAME = "GOJIBAKE-GLYPH-FRAGMENT";
-const DUAL_POSITIONS = ["top", "bottom", "left", "right"] as const;
-const QUAD_QUADRANTS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
-const PLACEMENT_MODES = ["same-side", "opposite-side"] as const;
 
 const OPPOSITE_POSITION: Record<DualCompositePosition, DualCompositePosition> = {
   top: "bottom",
@@ -156,20 +141,14 @@ const SHADOW_STYLESHEET = new CSSStyleSheet();
 
 SHADOW_STYLESHEET.replaceSync(SHADOW_CSS);
 
-function isOneOf<T extends string>(value: string, choices: readonly T[]): value is T {
-  return choices.includes(value as T);
-}
-
-function hasChoices<T extends string>(
-  rule: FreeformAttributeValidationRule | EnumeratedAttributeValidationRule<T>,
-): rule is EnumeratedAttributeValidationRule<T> {
-  return rule.choices !== undefined;
-}
-
 function hasDualRegionPair(regions: Set<string>): boolean {
   return (
     (regions.has("top") && regions.has("bottom")) || (regions.has("left") && regions.has("right"))
   );
+}
+
+function isOneOf<T extends string>(value: string, choices: readonly T[]): value is T {
+  return choices.includes(value as T);
 }
 
 /**
@@ -271,7 +250,7 @@ export class GojibakeGlyphElement extends HTMLElement {
 
       const quadrants = new Set(fragments.map((fragment) => fragment.quadrant));
 
-      if (quadrants.size !== QUAD_QUADRANTS.length) {
+      if (quadrants.size !== QUAD_FRAGMENT_REGIONS.length) {
         this.reportConfigurationWarning(
           'quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" を 1 つずつ指定してください。',
         );
@@ -287,7 +266,7 @@ export class GojibakeGlyphElement extends HTMLElement {
     return [];
   }
 
-  private readFragmentElements(): HTMLElement[] | null {
+  private readFragmentElements(): GojibakeGlyphFragmentElement[] | null {
     const children = Array.from(this.children);
 
     for (const node of children) {
@@ -299,18 +278,18 @@ export class GojibakeGlyphElement extends HTMLElement {
       }
     }
 
-    return children.filter((node): node is HTMLElement => node.tagName === FRAGMENT_TAG_NAME);
+    return children.filter(
+      (node): node is GojibakeGlyphFragmentElement =>
+        node.tagName === FRAGMENT_TAG_NAME && node instanceof GojibakeGlyphFragmentElement,
+    );
   }
 
-  private readDualRenderFragments(elements: HTMLElement[]): DualRenderFragment[] {
+  private readDualRenderFragments(elements: GojibakeGlyphFragmentElement[]): DualRenderFragment[] {
     const fragments = this.readCompositeRenderFragments({
       elements,
       layout: "dual",
-      validRegions: DUAL_POSITIONS,
+      validRegions: DUAL_FRAGMENT_REGIONS,
       oppositeRegions: OPPOSITE_POSITION,
-      createInvalidRegionMessage(position: string): string {
-        return `dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "${position}"。`;
-      },
     });
 
     return fragments.map((fragment) => ({
@@ -319,15 +298,12 @@ export class GojibakeGlyphElement extends HTMLElement {
     }));
   }
 
-  private readQuadRenderFragments(elements: HTMLElement[]): QuadRenderFragment[] {
+  private readQuadRenderFragments(elements: GojibakeGlyphFragmentElement[]): QuadRenderFragment[] {
     const fragments = this.readCompositeRenderFragments({
       elements,
       layout: "quad",
-      validRegions: QUAD_QUADRANTS,
+      validRegions: QUAD_FRAGMENT_REGIONS,
       oppositeRegions: OPPOSITE_QUADRANT,
-      createInvalidRegionMessage(quadrant: string): string {
-        return `quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "${quadrant}"。`;
-      },
     });
 
     return fragments.map((fragment) => ({
@@ -344,41 +320,25 @@ export class GojibakeGlyphElement extends HTMLElement {
     layout,
     validRegions,
     oppositeRegions,
-    createInvalidRegionMessage,
   }: {
-    elements: HTMLElement[];
+    elements: GojibakeGlyphFragmentElement[];
     layout: TLayout;
     validRegions: readonly TRegion[];
     oppositeRegions: Record<TRegion, TRegion>;
-    createInvalidRegionMessage: (value: string) => string;
   }): CompositeRenderFragment<TLayout, TRegion>[] {
     return elements
-      .map((element, index): CompositeRenderFragment<TLayout, TRegion> | null => {
-        const glyph = this.readValidatedAttribute(element, index, {
-          attributeName: "glyph",
-        });
+      .map((element): CompositeRenderFragment<TLayout, TRegion> | null => {
+        const glyph = element.glyph;
         if (glyph === null) {
           return null;
         }
 
-        const region = this.readValidatedAttribute(element, index, {
-          attributeName: "region",
-          allowEmpty: false,
-          choices: validRegions,
-          createInvalidMessage: createInvalidRegionMessage,
-        });
-        if (region === null) {
+        const region = element.region;
+        if (region === null || !isOneOf(region, validRegions)) {
           return null;
         }
 
-        const placement = this.readValidatedAttribute(element, index, {
-          attributeName: "placement",
-          allowEmpty: false,
-          choices: PLACEMENT_MODES,
-          createInvalidMessage(value: string): string {
-            return `placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "${value}"。`;
-          },
-        });
+        const placement = element.placement;
         if (placement === null) {
           return null;
         }
@@ -415,59 +375,6 @@ export class GojibakeGlyphElement extends HTMLElement {
       place: crossed ? region : null,
       region,
     };
-  }
-
-  private readValidatedAttribute<T extends string>(
-    element: HTMLElement,
-    index: number,
-    rule: FreeformAttributeValidationRule,
-  ): string | null;
-  private readValidatedAttribute<T extends string>(
-    element: HTMLElement,
-    index: number,
-    rule: EnumeratedAttributeValidationRule<T>,
-  ): T | null;
-  private readValidatedAttribute<T extends string>(
-    element: HTMLElement,
-    index: number,
-    rule: FreeformAttributeValidationRule | EnumeratedAttributeValidationRule<T>,
-  ): string | T | null {
-    const { attributeName, required = true, allowEmpty = true } = rule;
-    const value = element.getAttribute(attributeName);
-
-    if (value === null || (!allowEmpty && value === "")) {
-      if (!required) {
-        return null;
-      }
-
-      this.reportFragmentAttributeWarning(
-        index,
-        attributeName,
-        `${attributeName} 属性は必須です。`,
-      );
-      return null;
-    }
-
-    if (hasChoices(rule) && !isOneOf(value, rule.choices)) {
-      this.reportFragmentAttributeWarning(
-        index,
-        rule.attributeName,
-        rule.createInvalidMessage(value),
-      );
-      return null;
-    }
-
-    return value;
-  }
-
-  private reportFragmentAttributeWarning(
-    index: number,
-    attributeName: string,
-    message: string,
-  ): void {
-    this.reportConfigurationWarning(
-      `${index + 1} 番目の <gojibake-glyph-fragment> の ${attributeName} 属性が不正です。${message}`,
-    );
   }
 
   private reportConfigurationWarning(message: string): void {
