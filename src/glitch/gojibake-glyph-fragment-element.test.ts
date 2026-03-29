@@ -43,21 +43,21 @@ describe("GojibakeGlyphFragmentElement", () => {
   });
 
   describe("glyph", () => {
-    it("glyph 属性があればそのまま返す", () => {
-      renderFixture('<gojibake-glyph-fragment glyph="異"></gojibake-glyph-fragment>');
+    it("textContent があればそのまま返す", () => {
+      renderFixture("<gojibake-glyph-fragment>異</gojibake-glyph-fragment>");
       const element = getFragment();
 
       expect(element.glyph).toBe("異");
       expect(warnings).toEqual([]);
     });
 
-    it("glyph 属性が欠けていると警告して null を返す", () => {
+    it("textContent が空なら警告して null を返す", () => {
       renderFixture("<gojibake-glyph-fragment></gojibake-glyph-fragment>");
       const element = getFragment();
 
       expect(element.glyph).toBeNull();
       expect(warnings).toEqual([
-        "<gojibake-glyph-fragment>: glyph 属性が不正です。glyph 属性は必須です。",
+        "<gojibake-glyph-fragment>: glyphが不正です。glyph テキストは必須です。",
       ]);
     });
   });
@@ -65,7 +65,7 @@ describe("GojibakeGlyphFragmentElement", () => {
   describe("parentGlyph", () => {
     it("gojibake-glyph 親があれば parentGlyph として返す", () => {
       renderFixture(
-        '<gojibake-glyph><gojibake-glyph-fragment glyph="片"></gojibake-glyph-fragment></gojibake-glyph>',
+        "<gojibake-glyph><gojibake-glyph-fragment>片</gojibake-glyph-fragment></gojibake-glyph>",
       );
       const parent = getGlyph();
       const child = getFragment();
@@ -74,7 +74,7 @@ describe("GojibakeGlyphFragmentElement", () => {
     });
 
     it("gojibake-glyph 親でなければ null を返す", () => {
-      renderFixture('<span><gojibake-glyph-fragment glyph="片"></gojibake-glyph-fragment></span>');
+      renderFixture("<span><gojibake-glyph-fragment>片</gojibake-glyph-fragment></span>");
       const child = getFragment();
 
       expect(child.parentGlyph).toBeNull();
@@ -106,7 +106,7 @@ describe("GojibakeGlyphFragmentElement", () => {
         },
       ] as const)("$title", ({ region, expected, warnings: expectedWarnings }) => {
         renderFixture(
-          `<gojibake-glyph><gojibake-glyph-fragment glyph="化" region="${region}"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="字" region="bottom" placement="same-side"></gojibake-glyph-fragment></gojibake-glyph>`,
+          `<gojibake-glyph><gojibake-glyph-fragment region="${region}">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">字</gojibake-glyph-fragment></gojibake-glyph>`,
         );
         const parent = getGlyph();
         const [target] = parent.fragments;
@@ -135,7 +135,7 @@ describe("GojibakeGlyphFragmentElement", () => {
         },
       ] as const)("$title", ({ region, expected, warnings: expectedWarnings }) => {
         renderFixture(
-          `<gojibake-glyph><gojibake-glyph-fragment glyph="化" region="${region}" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="字" region="top-right" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="崩" region="bottom-left" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="壊" region="bottom-right" placement="same-side"></gojibake-glyph-fragment></gojibake-glyph>`,
+          `<gojibake-glyph><gojibake-glyph-fragment region="${region}" placement="same-side">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">字</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">崩</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">壊</gojibake-glyph-fragment></gojibake-glyph>`,
         );
         const parent = getGlyph();
         const [target] = parent.fragments;
@@ -147,9 +147,7 @@ describe("GojibakeGlyphFragmentElement", () => {
     });
 
     it("親レイアウトが未確定なら全 region から検証する", () => {
-      renderFixture(
-        '<gojibake-glyph-fragment glyph="片" region="bottom-right"></gojibake-glyph-fragment>',
-      );
+      renderFixture('<gojibake-glyph-fragment region="bottom-right">片</gojibake-glyph-fragment>');
       const element = getFragment();
 
       expect(element.region).toBe("bottom-right");
@@ -157,9 +155,7 @@ describe("GojibakeGlyphFragmentElement", () => {
     });
 
     it("親レイアウトが未確定でも不正な region は警告して null を返す", () => {
-      renderFixture(
-        '<gojibake-glyph-fragment glyph="片" region="center"></gojibake-glyph-fragment>',
-      );
+      renderFixture('<gojibake-glyph-fragment region="center">片</gojibake-glyph-fragment>');
       const element = getFragment();
       const region = element.region;
 
@@ -171,7 +167,7 @@ describe("GojibakeGlyphFragmentElement", () => {
     });
 
     it("region 属性がなければ警告して null を返す", () => {
-      renderFixture('<gojibake-glyph-fragment glyph="片"></gojibake-glyph-fragment>');
+      renderFixture("<gojibake-glyph-fragment>片</gojibake-glyph-fragment>");
       const element = getFragment();
 
       expect(element.region).toBeNull();
@@ -214,7 +210,7 @@ describe("GojibakeGlyphFragmentElement", () => {
     });
 
     it("placement 属性がなければ警告して null を返す", () => {
-      renderFixture('<gojibake-glyph-fragment glyph="片" region="top"></gojibake-glyph-fragment>');
+      renderFixture('<gojibake-glyph-fragment region="top">片</gojibake-glyph-fragment>');
       const element = getFragment();
 
       expect(element.placement).toBeNull();
