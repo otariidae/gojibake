@@ -17,6 +17,11 @@ type FreeformAttributeValidationRule = AttributeValidationRule & {
   createInvalidMessage?: undefined;
 };
 
+type TextContentValidationRule = {
+  required?: boolean;
+  allowEmpty?: boolean;
+};
+
 export const DUAL_FRAGMENT_REGIONS = [
   "top",
   "bottom",
@@ -49,8 +54,8 @@ function hasChoices<T extends string>(
 
 export class GojibakeGlyphFragmentElement extends HTMLElement {
   public get glyph(): string | null {
-    return this.readValidatedAttribute({
-      attributeName: "glyph",
+    return this.readValidatedTextContent({
+      allowEmpty: false,
     });
   }
 
@@ -149,7 +154,27 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
     return value;
   }
 
+  private readValidatedTextContent(rule: TextContentValidationRule): string | null {
+    const { required = true, allowEmpty = true } = rule;
+    const value = this.textContent;
+
+    if (value === null || (!allowEmpty && value === "")) {
+      if (!required) {
+        return null;
+      }
+
+      this.reportValueWarning("glyph", "glyph テキストは必須です。");
+      return null;
+    }
+
+    return value;
+  }
+
   private reportAttributeWarning(attributeName: string, message: string): void {
-    console.warn(`<gojibake-glyph-fragment>: ${attributeName} 属性が不正です。${message}`);
+    this.reportValueWarning(`${attributeName} 属性`, message);
+  }
+
+  private reportValueWarning(target: string, message: string): void {
+    console.warn(`<gojibake-glyph-fragment>: ${target}が不正です。${message}`);
   }
 }

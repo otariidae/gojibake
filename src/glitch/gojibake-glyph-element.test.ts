@@ -57,13 +57,13 @@ describe("GojibakeGlyphElement", () => {
       {
         title: "fragment が 2 個なら dual を返す",
         fragments:
-          '<gojibake-glyph-fragment glyph="上" region="top" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="下" region="bottom" placement="same-side"></gojibake-glyph-fragment>',
+          '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">下</gojibake-glyph-fragment>',
         expected: "dual",
       },
       {
         title: "fragment が 4 個なら quad を返す",
         fragments:
-          '<gojibake-glyph-fragment glyph="上" region="top" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="下" region="bottom" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="左下" region="bottom-left" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="右下" region="bottom-right" placement="same-side"></gojibake-glyph-fragment>',
+          '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">下</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">右下</gojibake-glyph-fragment>',
         expected: "quad",
       },
     ] as const)("$title", ({ fragments, expected }) => {
@@ -77,7 +77,7 @@ describe("GojibakeGlyphElement", () => {
     it("gojibake-glyph-fragment の子要素だけを返す", () => {
       const glyph = renderGlyphFixture(
         "基",
-        '<gojibake-glyph-fragment glyph="上" region="top" placement="same-side"></gojibake-glyph-fragment><span></span><gojibake-glyph-fragment glyph="下" region="bottom" placement="same-side"></gojibake-glyph-fragment>',
+        '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><span></span><gojibake-glyph-fragment region="bottom" placement="same-side">下</gojibake-glyph-fragment>',
       );
 
       expect(glyph.fragments).toHaveLength(2);
@@ -107,7 +107,7 @@ describe("GojibakeGlyphElement", () => {
       it("span 群へ正規化して描画する", () => {
         const glyph = renderGlyphFixture(
           "基",
-          '<gojibake-glyph-fragment glyph="上" region="top" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="下" region="bottom" placement="opposite-side"></gojibake-glyph-fragment>',
+          '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="opposite-side">下</gojibake-glyph-fragment>',
         );
 
         glyph.connectedCallback();
@@ -131,7 +131,7 @@ describe("GojibakeGlyphElement", () => {
       it("不正な region 組み合わせは警告してフォールバックする", () => {
         const glyph = renderGlyphFixture(
           "基",
-          '<gojibake-glyph-fragment glyph="上" region="top" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="右" region="right" placement="same-side"></gojibake-glyph-fragment>',
+          '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="right" placement="same-side">右</gojibake-glyph-fragment>',
         );
 
         glyph.connectedCallback();
@@ -148,7 +148,7 @@ describe("GojibakeGlyphElement", () => {
       it("4 象限をそれぞれ描画する", () => {
         const glyph = renderGlyphFixture(
           "基",
-          '<gojibake-glyph-fragment glyph="左上" region="top-left" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="右上" region="top-right" placement="opposite-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="左下" region="bottom-left" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="右下" region="bottom-right" placement="opposite-side"></gojibake-glyph-fragment>',
+          '<gojibake-glyph-fragment region="top-left" placement="same-side">左上</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="opposite-side">右上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="opposite-side">右下</gojibake-glyph-fragment>',
         );
 
         glyph.connectedCallback();
@@ -169,7 +169,7 @@ describe("GojibakeGlyphElement", () => {
       it("quadrant が重複していると警告してフォールバックする", () => {
         const glyph = renderGlyphFixture(
           "基",
-          '<gojibake-glyph-fragment glyph="左上1" region="top-left" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="右上" region="top-right" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="左下" region="bottom-left" placement="same-side"></gojibake-glyph-fragment><gojibake-glyph-fragment glyph="左上2" region="top-left" placement="same-side"></gojibake-glyph-fragment>',
+          '<gojibake-glyph-fragment region="top-left" placement="same-side">左上1</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">右上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-left" placement="same-side">左上2</gojibake-glyph-fragment>',
         );
 
         glyph.connectedCallback();

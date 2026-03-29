@@ -157,17 +157,17 @@ function isOneOf<T extends string>(value: string, choices: readonly T[]): value 
  * composite（dual / quad）グリッチ効果を表示するカスタム要素。
  *
  * - `textContent` に元文字を指定する
- * - 各断片は `<gojibake-glyph-fragment>` 子要素で指定する
+ * - 各断片は `<gojibake-glyph-fragment>` 子要素の `textContent` で指定する
  * - 子要素数が 2 のとき dual、4 のとき quad とみなす
- *   - dual の場合: 各子要素は `glyph`, `region`, `placement` を持つ
- *   - quad の場合: 各子要素は `glyph`, `region`, `placement` を持つ
+ *   - dual の場合: 各子要素は本文と `region`, `placement` を持つ
+ *   - quad の場合: 各子要素は本文と `region`, `placement` を持つ
  *
  * @example
  * // dual composite（上下分割）
  * // <gojibake-glyph>
  * //   あ
- * //   <gojibake-glyph-fragment glyph="い" region="top" placement="same-side"></gojibake-glyph-fragment>
- * //   <gojibake-glyph-fragment glyph="う" region="bottom" placement="opposite-side"></gojibake-glyph-fragment>
+ * //   <gojibake-glyph-fragment region="top" placement="same-side">い</gojibake-glyph-fragment>
+ * //   <gojibake-glyph-fragment region="bottom" placement="opposite-side">う</gojibake-glyph-fragment>
  * // </gojibake-glyph>
  */
 export class GojibakeGlyphElement extends HTMLElement {
@@ -205,7 +205,7 @@ export class GojibakeGlyphElement extends HTMLElement {
   }
 
   private render(): void {
-    const baseChar = this.textContent ?? "";
+    const baseChar = this.readBaseChar();
     const fragments = this.readRenderFragments();
 
     const base = document.createElement("span");
@@ -231,6 +231,13 @@ export class GojibakeGlyphElement extends HTMLElement {
     }
 
     this.shadow.replaceChildren(df);
+  }
+
+  private readBaseChar(): string {
+    return Array.from(this.childNodes)
+      .filter((node): node is Text => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.data)
+      .join("");
   }
 
   /**

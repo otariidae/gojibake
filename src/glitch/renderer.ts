@@ -26,8 +26,8 @@ export class GlitchRenderer {
    * // source = "AB" で A が dual composite、B が通常文字の場合:
    * // <gojibake-glyph>
    * //   A
-   * //   <gojibake-glyph-fragment glyph="い" region="top" placement="same-side"></gojibake-glyph-fragment>
-   * //   <gojibake-glyph-fragment glyph="う" region="bottom" placement="opposite-side"></gojibake-glyph-fragment>
+   * //   <gojibake-glyph-fragment region="top" placement="same-side">い</gojibake-glyph-fragment>
+   * //   <gojibake-glyph-fragment region="bottom" placement="opposite-side">う</gojibake-glyph-fragment>
    * // </gojibake-glyph>
    * // <span class="char">
    * //   <span class="char__base">B</span>
@@ -99,7 +99,7 @@ export class GlitchRenderer {
     if (composite.kind === "dual") {
       composite.fragments.forEach((fragment) => {
         const fragmentEl = document.createElement("gojibake-glyph-fragment");
-        fragmentEl.setAttribute("glyph", fragment.char);
+        fragmentEl.textContent = fragment.char;
         fragmentEl.setAttribute("region", fragment.position);
         fragmentEl.setAttribute("placement", fragment.placement);
         el.appendChild(fragmentEl);
@@ -107,7 +107,7 @@ export class GlitchRenderer {
     } else {
       composite.fragments.forEach((fragment) => {
         const fragmentEl = document.createElement("gojibake-glyph-fragment");
-        fragmentEl.setAttribute("glyph", fragment.char);
+        fragmentEl.textContent = fragment.char;
         fragmentEl.setAttribute("region", fragment.quadrant);
         fragmentEl.setAttribute("placement", fragment.placement);
         el.appendChild(fragmentEl);
