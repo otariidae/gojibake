@@ -1,5 +1,5 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
-import type { GojibakeGlyphElement, GojibakeGlyphLayout } from "./gojibake-glyph-element.js";
+import { GojibakeGlyphElement, type GojibakeGlyphLayout } from "./gojibake-glyph-element.js";
 
 type EnumeratedAttributeValidationRule<T extends string> = {
   attributeName: string;
@@ -52,11 +52,11 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
   public get parentGlyph(): GojibakeGlyphElement | null {
     const parent = this.parentElement;
 
-    if (parent?.tagName !== "GOJIBAKE-GLYPH") {
+    if (!(parent instanceof GojibakeGlyphElement)) {
       return null;
     }
 
-    return parent as GojibakeGlyphElement;
+    return parent;
   }
 
   public get region(): FragmentRegion | null {
