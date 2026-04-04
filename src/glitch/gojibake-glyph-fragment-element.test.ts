@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 
 import { GojibakeGlyphElement } from "./gojibake-glyph-element.ts";
 import { GojibakeGlyphFragmentElement } from "./gojibake-glyph-fragment-element.ts";
@@ -27,38 +27,19 @@ function getGlyph(): GojibakeGlyphElement {
 }
 
 describe("GojibakeGlyphFragmentElement", () => {
-  const originalWarn = console.warn;
-  let warnings: string[];
-
-  beforeEach(() => {
-    warnings = [];
-    fixtureRoot = document.createElement("div");
-    console.warn = (message: string) => {
-      warnings.push(message);
-    };
-  });
-
-  afterEach(() => {
-    console.warn = originalWarn;
-  });
-
   describe("glyph", () => {
     it("textContent があればそのまま返す", () => {
       renderFixture("<gojibake-glyph-fragment>異</gojibake-glyph-fragment>");
       const element = getFragment();
 
       expect(element.glyph).toBe("異");
-      expect(warnings).toEqual([]);
     });
 
-    it("textContent が空なら警告して null を返す", () => {
+    it("textContent が空なら null を返す", () => {
       renderFixture("<gojibake-glyph-fragment></gojibake-glyph-fragment>");
       const element = getFragment();
 
       expect(element.glyph).toBeNull();
-      expect(warnings).toEqual([
-        "<gojibake-glyph-fragment>: glyphが不正です。glyph テキストは必須です。",
-      ]);
     });
   });
 
@@ -88,23 +69,18 @@ describe("GojibakeGlyphFragmentElement", () => {
           title: "dual 親では top を受け付ける",
           region: "top",
           expected: "top",
-          warnings: [],
         },
         {
           title: "dual 親では bottom を受け付ける",
           region: "bottom",
           expected: "bottom",
-          warnings: [],
         },
         {
-          title: "dual 親では quad 用 region を警告して弾く",
+          title: "dual 親では quad 用 region に invalid value default を適用する",
           region: "top-left",
-          expected: null,
-          warnings: [
-            '<gojibake-glyph-fragment>: region 属性が不正です。dual 構成の region 属性は "top"・"bottom"・"left"・"right" のいずれかを指定してください。現在の値: "top-left"。',
-          ],
+          expected: "top",
         },
-      ] as const)("$title", ({ region, expected, warnings: expectedWarnings }) => {
+      ] as const)("$title", ({ region, expected }) => {
         renderFixture(
           `<gojibake-glyph><gojibake-glyph-fragment region="${region}">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">字</gojibake-glyph-fragment></gojibake-glyph>`,
         );
@@ -113,7 +89,26 @@ describe("GojibakeGlyphFragmentElement", () => {
 
         expect(parent.layout).toBe("dual");
         expect(target.region).toBe(expected);
-        expect(warnings).toEqual(expectedWarnings);
+      });
+
+      it("dual 親では region 属性がなければ missing value default を返す", () => {
+        renderFixture(
+          '<gojibake-glyph><gojibake-glyph-fragment placement="same-side">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">字</gojibake-glyph-fragment></gojibake-glyph>',
+        );
+        const parent = getGlyph();
+        const [target] = parent.fragments;
+
+        expect(target.region).toBe("top");
+      });
+
+      it("dual 親では空文字 region に empty value default を返す", () => {
+        renderFixture(
+          '<gojibake-glyph><gojibake-glyph-fragment region="" placement="same-side">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">字</gojibake-glyph-fragment></gojibake-glyph>',
+        );
+        const parent = getGlyph();
+        const [target] = parent.fragments;
+
+        expect(target.region).toBe("top");
       });
     });
 
@@ -123,17 +118,13 @@ describe("GojibakeGlyphFragmentElement", () => {
           title: "quad 親では top-left を受け付ける",
           region: "top-left",
           expected: "top-left",
-          warnings: [],
         },
         {
-          title: "quad 親では dual 用 region を警告して弾く",
+          title: "quad 親では dual 用 region に invalid value default を適用する",
           region: "top",
-          expected: null,
-          warnings: [
-            '<gojibake-glyph-fragment>: region 属性が不正です。quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "top"。',
-          ],
+          expected: "top-left",
         },
-      ] as const)("$title", ({ region, expected, warnings: expectedWarnings }) => {
+      ] as const)("$title", ({ region, expected }) => {
         renderFixture(
           `<gojibake-glyph><gojibake-glyph-fragment region="${region}" placement="same-side">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">字</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">崩</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">壊</gojibake-glyph-fragment></gojibake-glyph>`,
         );
@@ -142,7 +133,26 @@ describe("GojibakeGlyphFragmentElement", () => {
 
         expect(parent.layout).toBe("quad");
         expect(target.region).toBe(expected);
-        expect(warnings).toEqual(expectedWarnings);
+      });
+
+      it("quad 親では region 属性がなければ missing value default を返す", () => {
+        renderFixture(
+          '<gojibake-glyph><gojibake-glyph-fragment placement="same-side">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">字</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">崩</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">壊</gojibake-glyph-fragment></gojibake-glyph>',
+        );
+        const parent = getGlyph();
+        const [target] = parent.fragments;
+
+        expect(target.region).toBe("top-left");
+      });
+
+      it("quad 親では空文字 region に empty value default を返す", () => {
+        renderFixture(
+          '<gojibake-glyph><gojibake-glyph-fragment region="" placement="same-side">化</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">字</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">崩</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">壊</gojibake-glyph-fragment></gojibake-glyph>',
+        );
+        const parent = getGlyph();
+        const [target] = parent.fragments;
+
+        expect(target.region).toBe("top-left");
       });
     });
 
@@ -151,29 +161,27 @@ describe("GojibakeGlyphFragmentElement", () => {
       const element = getFragment();
 
       expect(element.region).toBe("bottom-right");
-      expect(warnings).toEqual([]);
     });
 
-    it("親レイアウトが未確定でも不正な region は警告して null を返す", () => {
+    it("親レイアウトが未確定でも不正な region には invalid value default を返す", () => {
       renderFixture('<gojibake-glyph-fragment region="center">片</gojibake-glyph-fragment>');
       const element = getFragment();
-      const region = element.region;
 
-      expect(region).toBeNull();
-      expect(warnings).toEqual([
-        '<gojibake-glyph-fragment>: region 属性が不正です。region 属性は "top"・"bottom"・"left"・"right"・"top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "center"。',
-        '<gojibake-glyph-fragment>: region 属性が不正です。region 属性は "top"・"bottom"・"left"・"right"・"top-left"・"top-right"・"bottom-left"・"bottom-right" のいずれかを指定してください。現在の値: "center"。',
-      ]);
+      expect(element.region).toBe("top");
     });
 
-    it("region 属性がなければ警告して null を返す", () => {
+    it("region 属性がなければ missing value default を返す", () => {
       renderFixture("<gojibake-glyph-fragment>片</gojibake-glyph-fragment>");
       const element = getFragment();
 
-      expect(element.region).toBeNull();
-      expect(warnings).toEqual([
-        "<gojibake-glyph-fragment>: region 属性が不正です。region 属性は必須です。",
-      ]);
+      expect(element.region).toBe("top");
+    });
+
+    it("region 属性が空文字なら empty value default を返す", () => {
+      renderFixture('<gojibake-glyph-fragment region="">片</gojibake-glyph-fragment>');
+      const element = getFragment();
+
+      expect(element.region).toBe("top");
     });
   });
 
@@ -183,40 +191,38 @@ describe("GojibakeGlyphFragmentElement", () => {
         title: "same-side を受け付ける",
         value: "same-side",
         expected: "same-side",
-        warnings: [],
       },
       {
         title: "opposite-side を受け付ける",
         value: "opposite-side",
         expected: "opposite-side",
-        warnings: [],
       },
       {
-        title: "無効な値なら警告して null を返す",
+        title: "無効な値なら invalid value default を返す",
         value: "cross",
-        expected: null,
-        warnings: [
-          '<gojibake-glyph-fragment>: placement 属性が不正です。placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "cross"。',
-          '<gojibake-glyph-fragment>: placement 属性が不正です。placement 属性は "same-side" または "opposite-side" を指定してください。現在の値: "cross"。',
-        ],
+        expected: "same-side",
       },
-    ] as const)("$title", ({ value, expected, warnings: expectedWarnings }) => {
+    ] as const)("$title", ({ value, expected }) => {
       renderFixture(`<gojibake-glyph-fragment placement="${value}"></gojibake-glyph-fragment>`);
       const element = getFragment();
-      const placement = element.placement;
 
-      expect(placement).toBe(expected);
-      expect(warnings).toEqual(expectedWarnings);
+      expect(element.placement).toBe(expected);
     });
 
-    it("placement 属性がなければ警告して null を返す", () => {
+    it("placement 属性がなければ missing value default を返す", () => {
       renderFixture('<gojibake-glyph-fragment region="top">片</gojibake-glyph-fragment>');
       const element = getFragment();
 
-      expect(element.placement).toBeNull();
-      expect(warnings).toEqual([
-        "<gojibake-glyph-fragment>: placement 属性が不正です。placement 属性は必須です。",
-      ]);
+      expect(element.placement).toBe("same-side");
+    });
+
+    it("placement 属性が空文字なら empty value default を返す", () => {
+      renderFixture(
+        '<gojibake-glyph-fragment region="top" placement="">片</gojibake-glyph-fragment>',
+      );
+      const element = getFragment();
+
+      expect(element.placement).toBe("same-side");
     });
   });
 });
