@@ -117,7 +117,6 @@ export abstract class IDLAttributesElement<TProps extends IDLProps> extends HTML
   public constructor() {
     super();
     this.#properties = this.readProperties();
-    installAccessorsIfNeeded(this.constructor as Partial<IDLElementCtor<TProps>>);
   }
 
   protected readProperty<TName extends PropName<TProps>>(
