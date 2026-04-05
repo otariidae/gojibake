@@ -91,6 +91,10 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
     });
   }
 
+  public set region(value: FragmentRegion) {
+    this.setAttribute("region", value);
+  }
+
   public get placement(): PlacementMode | null {
     return this.readValidatedEnumeratedAttribute({
       attributeName: "placement",
@@ -99,6 +103,10 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
       missingValueDefault: PLACEMENT_MODE_DEFAULT,
       emptyValueDefault: PLACEMENT_MODE_DEFAULT,
     });
+  }
+
+  public set placement(value: PlacementMode) {
+    this.setAttribute("placement", value);
   }
 
   private resolveParentLayout(): GojibakeGlyphLayout {
