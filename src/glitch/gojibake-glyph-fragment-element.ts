@@ -1,5 +1,4 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
-import { GojibakeGlyphElement, type GojibakeGlyphLayout } from "./gojibake-glyph-element.js";
 
 type EnumeratedAttributeValidationRule<T extends string> = {
   attributeName: string;
@@ -30,8 +29,6 @@ export const QUAD_FRAGMENT_REGIONS = [
 
 const ALL_FRAGMENT_REGIONS = [...DUAL_FRAGMENT_REGIONS, ...QUAD_FRAGMENT_REGIONS] as const;
 const PLACEMENT_MODES = ["same-side", "opposite-side"] as const;
-const DUAL_FRAGMENT_REGION_DEFAULT = DUAL_FRAGMENT_REGIONS[0];
-const QUAD_FRAGMENT_REGION_DEFAULT = QUAD_FRAGMENT_REGIONS[0];
 const FRAGMENT_REGION_DEFAULT = ALL_FRAGMENT_REGIONS[0];
 const PLACEMENT_MODE_DEFAULT = PLACEMENT_MODES[0];
 
@@ -49,39 +46,7 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
     });
   }
 
-  public get parentGlyph(): GojibakeGlyphElement | null {
-    const parent = this.parentElement;
-
-    if (!(parent instanceof GojibakeGlyphElement)) {
-      return null;
-    }
-
-    return parent;
-  }
-
   public get region(): FragmentRegion | null {
-    const layout = this.resolveParentLayout();
-
-    if (layout === "dual") {
-      return this.readValidatedEnumeratedAttribute({
-        attributeName: "region",
-        choices: DUAL_FRAGMENT_REGIONS,
-        invalidValueDefault: DUAL_FRAGMENT_REGION_DEFAULT,
-        missingValueDefault: DUAL_FRAGMENT_REGION_DEFAULT,
-        emptyValueDefault: DUAL_FRAGMENT_REGION_DEFAULT,
-      });
-    }
-
-    if (layout === "quad") {
-      return this.readValidatedEnumeratedAttribute({
-        attributeName: "region",
-        choices: QUAD_FRAGMENT_REGIONS,
-        invalidValueDefault: QUAD_FRAGMENT_REGION_DEFAULT,
-        missingValueDefault: QUAD_FRAGMENT_REGION_DEFAULT,
-        emptyValueDefault: QUAD_FRAGMENT_REGION_DEFAULT,
-      });
-    }
-
     return this.readValidatedEnumeratedAttribute({
       attributeName: "region",
       choices: ALL_FRAGMENT_REGIONS,
@@ -107,16 +72,6 @@ export class GojibakeGlyphFragmentElement extends HTMLElement {
 
   public set placement(value: PlacementMode) {
     this.setAttribute("placement", value);
-  }
-
-  private resolveParentLayout(): GojibakeGlyphLayout {
-    const parent = this.parentGlyph;
-
-    if (parent === null) {
-      return null;
-    }
-
-    return parent.layout;
   }
 
   private readValidatedEnumeratedAttribute<T extends string>(
