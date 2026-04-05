@@ -25,7 +25,6 @@ export class GlitchRenderer {
    * @example
    * // source = "AB" で A が dual composite、B が通常文字の場合:
    * // <gojibake-glyph>
-   * //   A
    * //   <gojibake-glyph-fragment region="top" placement="same-side">い</gojibake-glyph-fragment>
    * //   <gojibake-glyph-fragment region="bottom" placement="opposite-side">う</gojibake-glyph-fragment>
    * // </gojibake-glyph>
@@ -66,7 +65,7 @@ export class GlitchRenderer {
     }
 
     if (effect?.kind === "composite") {
-      return this.buildCompositeCharElement(sourceChar, effect.composite);
+      return this.buildCompositeCharElement(effect.composite);
     }
 
     // replacement の場合は置換後の文字、それ以外は元の文字を表示する
@@ -85,16 +84,13 @@ export class GlitchRenderer {
   /**
    * composite エフェクトを表す `<gojibake-glyph>` カスタム要素を生成する。
    *
-   * 元文字は `textContent`、各断片は `<gojibake-glyph-fragment>` 子要素として構築する。
-   * clip/place への変換と Shadow DOM 内のレンダリングはカスタム要素側で行う。
+   * 各断片は `<gojibake-glyph-fragment>` 子要素として構築する。
+   * 1 文字セルの寸法決定と clip/place への変換はカスタム要素側で行う。
    *
-   * @param sourceChar 元テキストの1文字
    * @param composite 適用するcompositeエントリ
    */
-  private buildCompositeCharElement(sourceChar: string, composite: CompositeEntry): HTMLElement {
+  private buildCompositeCharElement(composite: CompositeEntry): HTMLElement {
     const el = document.createElement("gojibake-glyph");
-    // 空白文字は見た目上スペースを維持するためにノーブレークスペースに置換する
-    el.textContent = sourceChar === " " ? "\u00a0" : sourceChar;
 
     if (composite.kind === "dual") {
       composite.fragments.forEach((fragment) => {

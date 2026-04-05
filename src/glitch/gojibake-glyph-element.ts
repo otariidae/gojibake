@@ -53,16 +53,10 @@ const SHADOW_CSS = `
   position: relative;
   display: inline-grid;
   place-items: center;
-}
-
-.base {
-  display: block;
-  text-align: center;
-  opacity: 0;
-}
-
-.base--fallback {
-  opacity: 1;
+  inline-size: 1ic;
+  block-size: 1ic;
+  overflow: hidden;
+  vertical-align: text-bottom;
 }
 
 .fragment {
@@ -154,16 +148,16 @@ function isOneOf<T extends string>(value: string, choices: readonly T[]): value 
 /**
  * composite（dual / quad）グリッチ効果を表示するカスタム要素。
  *
- * - `textContent` に元文字を指定する
  * - 各断片は `<gojibake-glyph-fragment>` 子要素の `textContent` で指定する
  * - 子要素数が 2 のとき dual、4 のとき quad とみなす
  *   - dual の場合: 各子要素は本文と `region`, `placement` を持つ
  *   - quad の場合: 各子要素は本文と `region`, `placement` を持つ
+ * - 正常系では 1 文字セル（1ic × 1ic）として断片だけを重ねて描画する
+ * - 構成が不正な場合は合成描画を諦め、light DOM をそのまま表示する
  *
  * @example
  * // dual composite（上下分割）
  * // <gojibake-glyph>
- * //   あ
  * //   <gojibake-glyph-fragment region="top" placement="same-side">い</gojibake-glyph-fragment>
  * //   <gojibake-glyph-fragment region="bottom" placement="opposite-side">う</gojibake-glyph-fragment>
  * // </gojibake-glyph>
@@ -200,18 +194,14 @@ export class GojibakeGlyphElement extends HTMLElement {
   }
 
   private render(): void {
-    const baseChar = this.readBaseChar();
     const fragments = this.readRenderFragments();
 
-    const base = document.createElement("span");
-    base.className = "base";
     if (fragments.length === 0) {
-      base.classList.add("base--fallback");
+      this.renderLightDom();
+      return;
     }
-    base.textContent = baseChar === " " ? "\u00a0" : baseChar;
 
     const df = document.createDocumentFragment();
-    df.appendChild(base);
 
     for (const fragment of fragments) {
       const span = document.createElement("span");
@@ -228,18 +218,13 @@ export class GojibakeGlyphElement extends HTMLElement {
     this.shadow.replaceChildren(df);
   }
 
-  private readBaseChar(): string {
-    return Array.from(this.childNodes)
-      .filter((node): node is Text => node.nodeType === Node.TEXT_NODE)
-      .map((node) => node.data)
-      .join("");
+  private renderLightDom(): void {
+    this.shadow.replaceChildren(document.createElement("slot"));
   }
 
   /**
    * 子要素を読み取り、span 生成に必要な情報へ正規化する。
    * 子要素数が 2 なら dual、4 なら quad として扱う。それ以外は空配列を返す。
-   *
-   * 不正な構成は現段階では描画挙動を変えず、警告だけを出す。
    */
   private readRenderFragments(): RenderFragment[] {
     if (this.layout === "dual") {
