@@ -19,16 +19,20 @@ function renderFixture(markup: string): GojibakeGlyphElement {
   return fixtureRoot.querySelector("gojibake-glyph") as GojibakeGlyphElement;
 }
 
-function renderGlyphFixture(baseChar: string, fragments = ""): GojibakeGlyphElement {
-  return renderFixture(`<gojibake-glyph>${baseChar}${fragments}</gojibake-glyph>`);
+function renderGlyphFixture(fragments = "", leadingText = ""): GojibakeGlyphElement {
+  return renderFixture(`<gojibake-glyph>${leadingText}${fragments}</gojibake-glyph>`);
 }
 
-function readBase(element: GojibakeGlyphElement): HTMLSpanElement {
-  return element.shadowRoot?.querySelector(".base") as HTMLSpanElement;
+function readBase(element: GojibakeGlyphElement): HTMLSpanElement | null {
+  return element.shadowRoot?.querySelector(".base") ?? null;
 }
 
 function readFragments(element: GojibakeGlyphElement): HTMLSpanElement[] {
   return Array.from(element.shadowRoot?.querySelectorAll(".fragment") ?? []);
+}
+
+function readSlot(element: GojibakeGlyphElement): HTMLSlotElement | null {
+  return element.shadowRoot?.querySelector("slot") ?? null;
 }
 
 describe("GojibakeGlyphElement", () => {
@@ -56,7 +60,7 @@ describe("GojibakeGlyphElement", () => {
         expected: "quad",
       },
     ] as const)("$title", ({ fragments, expected }) => {
-      const glyph = renderGlyphFixture("原", fragments);
+      const glyph = renderGlyphFixture(fragments, "原");
 
       expect(glyph.layout).toBe(expected);
     });
@@ -65,8 +69,8 @@ describe("GojibakeGlyphElement", () => {
   describe("fragments", () => {
     it("gojibake-glyph-fragment の子要素だけを返す", () => {
       const glyph = renderGlyphFixture(
-        "基",
         '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><span></span><gojibake-glyph-fragment region="bottom" placement="same-side">下</gojibake-glyph-fragment>',
+        "基",
       );
 
       expect(glyph.fragments).toHaveLength(2);
@@ -78,30 +82,29 @@ describe("GojibakeGlyphElement", () => {
   });
 
   describe("connectedCallback", () => {
-    it("fragment がなければフォールバック文字だけを描画する", () => {
-      const glyph = renderGlyphFixture(" ");
+    it("fragment がなければ light DOM をそのまま表示する", () => {
+      const glyph = renderGlyphFixture("", " ");
 
       glyph.connectedCallback();
 
-      const base = readBase(glyph);
-
       expect(readFragments(glyph)).toHaveLength(0);
-      expect(base.classList.contains("base--fallback")).toBe(true);
-      expect(base.textContent).toBe("\u00a0");
+      expect(readBase(glyph)).toBeNull();
+      expect(readSlot(glyph)).not.toBeNull();
     });
 
     describe("dual 構成", () => {
       it("span 群へ正規化して描画する", () => {
         const glyph = renderGlyphFixture(
-          "基",
           '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="opposite-side">下</gojibake-glyph-fragment>',
+          "基",
         );
 
         glyph.connectedCallback();
 
         const [first, second] = readFragments(glyph);
 
-        expect(readBase(glyph).textContent).toBe("基");
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).toBeNull();
 
         expect(first.dataset.layout).toBe("dual");
         expect(first.dataset.clip).toBe("top");
@@ -114,42 +117,46 @@ describe("GojibakeGlyphElement", () => {
         expect(second.textContent).toBe("下");
       });
 
-      it("不正な region 組み合わせはフォールバックする", () => {
+      it("不正な region 組み合わせなら light DOM をそのまま表示する", () => {
         const glyph = renderGlyphFixture(
-          "基",
           '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="right" placement="same-side">右</gojibake-glyph-fragment>',
+          "基",
         );
 
         glyph.connectedCallback();
 
         expect(readFragments(glyph)).toHaveLength(0);
-        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).not.toBeNull();
       });
 
-      it("quad 用 region が混ざるとフォールバックする", () => {
+      it("quad 用 region が混ざると light DOM をそのまま表示する", () => {
         const glyph = renderGlyphFixture(
-          "基",
           '<gojibake-glyph-fragment region="top-left" placement="same-side">左上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">下</gojibake-glyph-fragment>',
+          "基",
         );
 
         glyph.connectedCallback();
 
         expect(readFragments(glyph)).toHaveLength(0);
-        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).not.toBeNull();
       });
     });
 
     describe("quad 構成", () => {
       it("4 象限をそれぞれ描画する", () => {
         const glyph = renderGlyphFixture(
-          "基",
           '<gojibake-glyph-fragment region="top-left" placement="same-side">左上</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="opposite-side">右上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="opposite-side">右下</gojibake-glyph-fragment>',
+          "基",
         );
 
         glyph.connectedCallback();
 
         const [topLeft, topRight, bottomLeft, bottomRight] = readFragments(glyph);
 
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).toBeNull();
         expect(readFragments(glyph)).toHaveLength(4);
         expect(topLeft.dataset.clip).toBe("top-left");
         expect(topLeft.dataset.place).toBeUndefined();
@@ -160,38 +167,41 @@ describe("GojibakeGlyphElement", () => {
         expect(bottomRight.dataset.place).toBe("bottom-right");
       });
 
-      it("quadrant が重複しているとフォールバックする", () => {
+      it("quadrant が重複していると light DOM をそのまま表示する", () => {
         const glyph = renderGlyphFixture(
-          "基",
           '<gojibake-glyph-fragment region="top-left" placement="same-side">左上1</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">右上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-left" placement="same-side">左上2</gojibake-glyph-fragment>',
+          "基",
         );
 
         glyph.connectedCallback();
 
         expect(readFragments(glyph)).toHaveLength(0);
-        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).not.toBeNull();
       });
 
-      it("dual 用 region が混ざるとフォールバックする", () => {
+      it("dual 用 region が混ざると light DOM をそのまま表示する", () => {
         const glyph = renderGlyphFixture(
-          "基",
           '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">右上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">右下</gojibake-glyph-fragment>',
+          "基",
         );
 
         glyph.connectedCallback();
 
         expect(readFragments(glyph)).toHaveLength(0);
-        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).not.toBeNull();
       });
     });
 
     describe("不正な子要素", () => {
-      it("非対応の子要素が混ざると描画を止める", () => {
-        const glyph = renderGlyphFixture("基", "<span></span>");
+      it("非対応の子要素が混ざると light DOM をそのまま表示する", () => {
+        const glyph = renderGlyphFixture("<span></span>", "基");
         glyph.connectedCallback();
 
         expect(readFragments(glyph)).toHaveLength(0);
-        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(readBase(glyph)).toBeNull();
+        expect(readSlot(glyph)).not.toBeNull();
       });
     });
   });
