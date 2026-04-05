@@ -1,4 +1,5 @@
 import type { CompositeEntry } from "./composite-effect-builder.js";
+import type { GojibakeGlyphFragmentElement } from "./gojibake-glyph-fragment-element.js";
 import type { CharEffectState } from "./replacement-effect-builder.js";
 import type { DisplayState } from "./state-factory.js";
 
@@ -94,18 +95,22 @@ export class GlitchRenderer {
 
     if (composite.kind === "dual") {
       composite.fragments.forEach((fragment) => {
-        const fragmentEl = document.createElement("gojibake-glyph-fragment");
+        const fragmentEl = document.createElement(
+          "gojibake-glyph-fragment",
+        ) as GojibakeGlyphFragmentElement;
         fragmentEl.textContent = fragment.char;
-        fragmentEl.setAttribute("region", fragment.position);
-        fragmentEl.setAttribute("placement", fragment.placement);
+        fragmentEl.region = fragment.position;
+        fragmentEl.placement = fragment.placement;
         el.appendChild(fragmentEl);
       });
     } else {
       composite.fragments.forEach((fragment) => {
-        const fragmentEl = document.createElement("gojibake-glyph-fragment");
+        const fragmentEl = document.createElement(
+          "gojibake-glyph-fragment",
+        ) as GojibakeGlyphFragmentElement;
         fragmentEl.textContent = fragment.char;
-        fragmentEl.setAttribute("region", fragment.quadrant);
-        fragmentEl.setAttribute("placement", fragment.placement);
+        fragmentEl.region = fragment.quadrant;
+        fragmentEl.placement = fragment.placement;
         el.appendChild(fragmentEl);
       });
     }

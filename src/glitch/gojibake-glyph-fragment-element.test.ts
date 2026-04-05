@@ -18,6 +18,37 @@ function getFragment(): GojibakeGlyphFragmentElement {
 }
 
 describe("GojibakeGlyphFragmentElement", () => {
+  describe("properties", () => {
+    it("クラス内の static properties に列挙型 IDL 属性定義を持つ", () => {
+      expect(Object.keys(GojibakeGlyphFragmentElement.properties)).toEqual(["region", "placement"]);
+    });
+  });
+
+  describe("observedAttributes", () => {
+    it("static properties から監視属性を導出する", () => {
+      expect(GojibakeGlyphFragmentElement.observedAttributes).toEqual(
+        Object.values(GojibakeGlyphFragmentElement.properties).map(
+          ({ attributeName }) => attributeName,
+        ),
+      );
+    });
+  });
+
+  describe("generated IDL accessors", () => {
+    it.each([
+      "region",
+      "placement",
+    ] as const)("%s の getter / setter を定義テーブルから生成する", (propertyName) => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        GojibakeGlyphFragmentElement.prototype,
+        propertyName,
+      );
+
+      expect(descriptor?.get).toBeTypeOf("function");
+      expect(descriptor?.set).toBeTypeOf("function");
+    });
+  });
+
   describe("glyph", () => {
     it("textContent があればそのまま返す", () => {
       renderFixture("<gojibake-glyph-fragment>異</gojibake-glyph-fragment>");
@@ -71,6 +102,15 @@ describe("GojibakeGlyphFragmentElement", () => {
         const element = getFragment();
 
         expect(element.region).toBe("top");
+      });
+
+      it("region 属性の変更に追従する", () => {
+        renderFixture('<gojibake-glyph-fragment region="bottom">片</gojibake-glyph-fragment>');
+        const element = getFragment();
+
+        element.setAttribute("region", "bottom-right");
+
+        expect(element.region).toBe("bottom-right");
       });
     });
 
@@ -136,6 +176,17 @@ describe("GojibakeGlyphFragmentElement", () => {
         const element = getFragment();
 
         expect(element.placement).toBe("same-side");
+      });
+
+      it("placement 属性の変更に追従する", () => {
+        renderFixture(
+          '<gojibake-glyph-fragment region="top" placement="same-side">片</gojibake-glyph-fragment>',
+        );
+        const element = getFragment();
+
+        element.setAttribute("placement", "opposite-side");
+
+        expect(element.placement).toBe("opposite-side");
       });
     });
 
