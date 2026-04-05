@@ -364,6 +364,9 @@ export class GojibakeGlyphElement extends HTMLElement {
         }
 
         if (!isOneOf(region, validRegions)) {
+          this.reportConfigurationWarning(
+            `${layout} 構成では region 属性に "${region}" は指定できません。`,
+          );
           return null;
         }
 

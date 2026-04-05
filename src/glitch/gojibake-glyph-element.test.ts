@@ -142,6 +142,21 @@ describe("GojibakeGlyphElement", () => {
           '<gojibake-glyph>: dual 構成の region 属性は "top" と "bottom"、または "left" と "right" を 1 つずつ指定してください。',
         ]);
       });
+
+      it("quad 用 region が混ざると警告してフォールバックする", () => {
+        const glyph = renderGlyphFixture(
+          "基",
+          '<gojibake-glyph-fragment region="top-left" placement="same-side">左上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom" placement="same-side">下</gojibake-glyph-fragment>',
+        );
+
+        glyph.connectedCallback();
+
+        expect(readFragments(glyph)).toHaveLength(0);
+        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(warnings).toEqual([
+          '<gojibake-glyph>: dual 構成では region 属性に "top-left" は指定できません。',
+        ]);
+      });
     });
 
     describe("quad 構成", () => {
@@ -178,6 +193,21 @@ describe("GojibakeGlyphElement", () => {
         expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
         expect(warnings).toEqual([
           '<gojibake-glyph>: quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" を 1 つずつ指定してください。',
+        ]);
+      });
+
+      it("dual 用 region が混ざると警告してフォールバックする", () => {
+        const glyph = renderGlyphFixture(
+          "基",
+          '<gojibake-glyph-fragment region="top" placement="same-side">上</gojibake-glyph-fragment><gojibake-glyph-fragment region="top-right" placement="same-side">右上</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-left" placement="same-side">左下</gojibake-glyph-fragment><gojibake-glyph-fragment region="bottom-right" placement="same-side">右下</gojibake-glyph-fragment>',
+        );
+
+        glyph.connectedCallback();
+
+        expect(readFragments(glyph)).toHaveLength(0);
+        expect(readBase(glyph).classList.contains("base--fallback")).toBe(true);
+        expect(warnings).toEqual([
+          '<gojibake-glyph>: quad 構成では region 属性に "top" は指定できません。',
         ]);
       });
     });
