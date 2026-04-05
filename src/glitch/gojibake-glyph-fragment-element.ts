@@ -1,12 +1,5 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
-
-type EnumeratedAttributeValidationRule<T extends string> = {
-  attributeName: string;
-  choices: readonly T[];
-  invalidValueDefault?: T;
-  missingValueDefault?: T;
-  emptyValueDefault?: T;
-};
+import { type EnumRule, IDLAttributesElement } from "./idl-attributes-element.js";
 
 type TextContentValidationRule = {
   required?: boolean;
@@ -29,71 +22,45 @@ export const QUAD_FRAGMENT_REGIONS = [
 
 const ALL_FRAGMENT_REGIONS = [...DUAL_FRAGMENT_REGIONS, ...QUAD_FRAGMENT_REGIONS] as const;
 const PLACEMENT_MODES = ["same-side", "opposite-side"] as const;
-const FRAGMENT_REGION_DEFAULT = ALL_FRAGMENT_REGIONS[0];
-const PLACEMENT_MODE_DEFAULT = PLACEMENT_MODES[0];
 
 export type FragmentRegion = (typeof ALL_FRAGMENT_REGIONS)[number];
 export type PlacementMode = (typeof PLACEMENT_MODES)[number];
 
-function isOneOf<T extends string>(value: string, choices: readonly T[]): value is T {
-  return choices.includes(value as T);
-}
+type FragmentProps = {
+  region: EnumRule<FragmentRegion>;
+  placement: EnumRule<PlacementMode>;
+};
 
-export class GojibakeGlyphFragmentElement extends HTMLElement {
+/**
+ * `region` と `placement` を宣言的に扱う断片要素。
+ *
+ * 列挙型 IDL 属性の自動反映は基底クラスへ寄せ、要素固有ロジックだけを持つ。
+ */
+export class GojibakeGlyphFragmentElement extends IDLAttributesElement<FragmentProps> {
+  public static readonly properties: FragmentProps = {
+    region: {
+      attributeName: "region",
+      choices: ALL_FRAGMENT_REGIONS,
+      invalidValueDefault: ALL_FRAGMENT_REGIONS[0],
+      missingValueDefault: ALL_FRAGMENT_REGIONS[0],
+      emptyValueDefault: ALL_FRAGMENT_REGIONS[0],
+    },
+    placement: {
+      attributeName: "placement",
+      choices: PLACEMENT_MODES,
+      invalidValueDefault: PLACEMENT_MODES[0],
+      missingValueDefault: PLACEMENT_MODES[0],
+      emptyValueDefault: PLACEMENT_MODES[0],
+    },
+  };
+
+  declare region: FragmentRegion | null;
+  declare placement: PlacementMode | null;
+
   public get glyph(): string | null {
     return this.readValidatedTextContent({
       allowEmpty: false,
     });
-  }
-
-  public get region(): FragmentRegion | null {
-    return this.readValidatedEnumeratedAttribute({
-      attributeName: "region",
-      choices: ALL_FRAGMENT_REGIONS,
-      invalidValueDefault: FRAGMENT_REGION_DEFAULT,
-      missingValueDefault: FRAGMENT_REGION_DEFAULT,
-      emptyValueDefault: FRAGMENT_REGION_DEFAULT,
-    });
-  }
-
-  public set region(value: FragmentRegion) {
-    this.setAttribute("region", value);
-  }
-
-  public get placement(): PlacementMode | null {
-    return this.readValidatedEnumeratedAttribute({
-      attributeName: "placement",
-      choices: PLACEMENT_MODES,
-      invalidValueDefault: PLACEMENT_MODE_DEFAULT,
-      missingValueDefault: PLACEMENT_MODE_DEFAULT,
-      emptyValueDefault: PLACEMENT_MODE_DEFAULT,
-    });
-  }
-
-  public set placement(value: PlacementMode) {
-    this.setAttribute("placement", value);
-  }
-
-  private readValidatedEnumeratedAttribute<T extends string>(
-    rule: EnumeratedAttributeValidationRule<T>,
-  ): T | null {
-    const { attributeName, choices, invalidValueDefault, missingValueDefault, emptyValueDefault } =
-      rule;
-    const value = this.getAttribute(attributeName);
-
-    if (value === null) {
-      return missingValueDefault ?? null;
-    }
-
-    if (value === "") {
-      return emptyValueDefault ?? invalidValueDefault ?? null;
-    }
-
-    if (!isOneOf(value, choices)) {
-      return invalidValueDefault ?? null;
-    }
-
-    return value;
   }
 
   private readValidatedTextContent(rule: TextContentValidationRule): string | null {
