@@ -34,8 +34,6 @@ type CompositeRenderFragment<
   region: TRegion;
 };
 
-const FRAGMENT_TAG_NAME = "GOJIBAKE-GLYPH-FRAGMENT";
-
 const OPPOSITE_POSITION: Record<DualCompositePosition, DualCompositePosition> = {
   top: "bottom",
   bottom: "top",
@@ -184,10 +182,7 @@ export class GojibakeGlyphElement extends HTMLElement {
   }
 
   public get fragments(): GojibakeGlyphFragmentElement[] {
-    return Array.from(this.children).filter(
-      (node): node is GojibakeGlyphFragmentElement =>
-        node.tagName === FRAGMENT_TAG_NAME && node instanceof GojibakeGlyphFragmentElement,
-    );
+    return Array.from(this.children).filter((node) => node instanceof GojibakeGlyphFragmentElement);
   }
 
   public get layout(): GojibakeGlyphLayout {
@@ -247,13 +242,8 @@ export class GojibakeGlyphElement extends HTMLElement {
    * 不正な構成は現段階では描画挙動を変えず、警告だけを出す。
    */
   private readRenderFragments(): RenderFragment[] {
-    const elements = this.readFragmentElements();
-    if (elements === null) {
-      return [];
-    }
-
     if (this.layout === "dual") {
-      const fragments = this.readDualRenderFragments(elements);
+      const fragments = this.readDualRenderFragments(this.fragments);
 
       if (fragments.length !== 2) {
         return [];
@@ -262,9 +252,6 @@ export class GojibakeGlyphElement extends HTMLElement {
       const positions = new Set(fragments.map((fragment) => fragment.position));
 
       if (!hasDualRegionPair(positions)) {
-        this.reportConfigurationWarning(
-          'dual 構成の region 属性は "top" と "bottom"、または "left" と "right" を 1 つずつ指定してください。',
-        );
         return [];
       }
 
@@ -272,7 +259,7 @@ export class GojibakeGlyphElement extends HTMLElement {
     }
 
     if (this.layout === "quad") {
-      const fragments = this.readQuadRenderFragments(elements);
+      const fragments = this.readQuadRenderFragments(this.fragments);
 
       if (fragments.length !== 4) {
         return [];
@@ -281,32 +268,13 @@ export class GojibakeGlyphElement extends HTMLElement {
       const quadrants = new Set(fragments.map((fragment) => fragment.quadrant));
 
       if (quadrants.size !== QUAD_FRAGMENT_REGIONS.length) {
-        this.reportConfigurationWarning(
-          'quad 構成の region 属性は "top-left"・"top-right"・"bottom-left"・"bottom-right" を 1 つずつ指定してください。',
-        );
         return [];
       }
 
       return fragments.map(({ quadrant: _, ...fragment }) => fragment);
     }
 
-    this.reportConfigurationWarning(
-      `子要素数は 2 または 4 である必要があります。現在は ${elements.length} 個です。`,
-    );
     return [];
-  }
-
-  private readFragmentElements(): GojibakeGlyphFragmentElement[] | null {
-    for (const node of Array.from(this.children)) {
-      if (node.tagName !== FRAGMENT_TAG_NAME) {
-        this.reportConfigurationWarning(
-          `子要素には <gojibake-glyph-fragment> を使用してください。<${node.localName}> はサポートしていません。`,
-        );
-        return null;
-      }
-    }
-
-    return this.fragments;
   }
 
   private readDualRenderFragments(elements: GojibakeGlyphFragmentElement[]): DualRenderFragment[] {
@@ -364,9 +332,6 @@ export class GojibakeGlyphElement extends HTMLElement {
         }
 
         if (!isOneOf(region, validRegions)) {
-          this.reportConfigurationWarning(
-            `${layout} 構成では region 属性に "${region}" は指定できません。`,
-          );
           return null;
         }
 
@@ -407,9 +372,5 @@ export class GojibakeGlyphElement extends HTMLElement {
       place: crossed ? region : null,
       region,
     };
-  }
-
-  private reportConfigurationWarning(message: string): void {
-    console.warn(`<gojibake-glyph>: ${message}`);
   }
 }
