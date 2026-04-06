@@ -10,5 +10,5 @@
     "outDir": ".",
     "skipLibCheck": true
   },
-  "files": ["src/glitch.ts"]
+  "files": ["src/glitch.ts", "src/single.ts"]
 }
