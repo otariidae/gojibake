@@ -100,6 +100,37 @@ describe("ReflectElement", () => {
     });
   });
 
+  describe("生成パターンごとの動作", () => {
+    it("document.createElement で生成した要素でもアクセサが動く", () => {
+      const element = document.createElement("reflect-element-dummy") as DummyReflectElement;
+
+      element.setAttribute("mode", "secondary");
+
+      expect(element.mode).toBe("secondary");
+    });
+
+    it("innerHTML で生成した要素でもアクセサが動く", () => {
+      const root = document.createElement("div");
+
+      root.innerHTML = '<reflect-element-dummy mode="primary"></reflect-element-dummy>';
+      const element = root.firstElementChild as DummyReflectElement;
+
+      element.mode = "secondary";
+
+      expect(element.getAttribute("mode")).toBe("secondary");
+      expect(element.mode).toBe("secondary");
+    });
+
+    it("new で生成した要素でもアクセサが動く", () => {
+      const element = new DummyReflectElement();
+
+      element.mode = "secondary";
+
+      expect(element.getAttribute("mode")).toBe("secondary");
+      expect(element.mode).toBe("secondary");
+    });
+  });
+
   describe("static properties が未定義な派生クラス", () => {
     class NoPropsElement extends ReflectElement<ReflectProps> {}
 
