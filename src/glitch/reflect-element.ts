@@ -6,28 +6,26 @@ export type EnumRule<T extends string> = {
   emptyValueDefault?: T;
 };
 
-export type IDLProps = Record<string, EnumRule<string>>;
+export type ReflectProps = Record<string, EnumRule<string>>;
 
-export type IDLAccessors<TProps extends IDLProps> = {
+export type ReflectAccessors<TProps extends ReflectProps> = {
   -readonly [TName in keyof TProps]: TProps[TName]["choices"][number] | null;
 };
 
-type IDLElementCtor<TProps extends IDLProps> = {
+type ReflectElementCtor<TProps extends ReflectProps> = {
   readonly properties: TProps;
 };
 
-type PropName<TProps extends IDLProps> = Extract<keyof TProps, string>;
-const ACCESSORS_INSTALLED = Symbol("idl-attributes-accessors-installed");
+type PropName<TProps extends ReflectProps> = Extract<keyof TProps, string>;
+const ACCESSORS_INSTALLED = Symbol("reflect-element-accessors-installed");
 
-function readObservedAttributes<TProps extends IDLProps>(
-  ctor: Partial<IDLElementCtor<TProps>>,
+function readObservedAttributes<TProps extends ReflectProps>(
+  ctor: Partial<ReflectElementCtor<TProps>>,
 ): string[] {
   const { properties } = ctor;
 
   if (properties === undefined) {
-    throw new Error(
-      "IDLAttributesElement を継承する要素は static properties を定義する必要があります。",
-    );
+    throw new Error("ReflectElement を継承する要素は static properties を定義する必要があります。");
   }
 
   return Object.values(properties).map(({ attributeName }) => attributeName);
@@ -56,10 +54,10 @@ function normalizePropValue<T extends string>(value: string | null, rule: EnumRu
 }
 
 function createAccessorDescriptor<
-  TProps extends IDLProps,
-  THost extends IDLAttributesElement<TProps>,
+  TProps extends ReflectProps,
+  THost extends ReflectElement<TProps>,
   TName extends PropName<TProps>,
->(propertyName: TName): TypedPropertyDescriptor<IDLAccessors<TProps>[TName]> {
+>(propertyName: TName): TypedPropertyDescriptor<ReflectAccessors<TProps>[TName]> {
   return {
     configurable: true,
     get(this: THost) {
@@ -71,15 +69,13 @@ function createAccessorDescriptor<
   };
 }
 
-function installAccessorsIfNeeded<TProps extends IDLProps>(
-  ctor: Partial<IDLElementCtor<TProps>>,
+function installAccessorsIfNeeded<TProps extends ReflectProps>(
+  ctor: Partial<ReflectElementCtor<TProps>>,
 ): void {
   const { properties } = ctor;
 
   if (properties === undefined) {
-    throw new Error(
-      "IDLAttributesElement を継承する要素は static properties を定義する必要があります。",
-    );
+    throw new Error("ReflectElement を継承する要素は static properties を定義する必要があります。");
   }
 
   const prototype = (ctor as { prototype?: object }).prototype;
@@ -103,15 +99,15 @@ function installAccessorsIfNeeded<TProps extends IDLProps>(
   markedPrototype[ACCESSORS_INSTALLED] = true;
 }
 
-export abstract class IDLAttributesElement<TProps extends IDLProps> extends HTMLElement {
-  static readonly properties: IDLProps;
+export abstract class ReflectElement<TProps extends ReflectProps> extends HTMLElement {
+  static readonly properties: ReflectProps;
   readonly #properties: TProps;
 
   static get observedAttributes() {
     // biome-ignore lint/complexity/noThisInStatic: 派生クラスをthisで参照するため
     installAccessorsIfNeeded(this);
     // biome-ignore lint/complexity/noThisInStatic: 派生クラスをthisで参照するため
-    return readObservedAttributes(this as Partial<IDLElementCtor<IDLProps>>);
+    return readObservedAttributes(this as Partial<ReflectElementCtor<ReflectProps>>);
   }
 
   public constructor() {
@@ -121,22 +117,22 @@ export abstract class IDLAttributesElement<TProps extends IDLProps> extends HTML
 
   protected readProperty<TName extends PropName<TProps>>(
     propertyName: TName,
-  ): IDLAccessors<TProps>[TName] {
+  ): ReflectAccessors<TProps>[TName] {
     const property = this.#properties[propertyName];
     return normalizePropValue(this.getAttribute(property.attributeName), property);
   }
 
   protected writeProperty<TName extends PropName<TProps>>(
     propertyName: TName,
-    value: IDLAccessors<TProps>[TName],
+    value: ReflectAccessors<TProps>[TName],
   ): void {
     const property = this.#properties[propertyName];
     this.setAttribute(property.attributeName, String(value));
   }
 
   protected static installAccessors<
-    TProps extends IDLProps,
-    THost extends IDLAttributesElement<TProps>,
+    TProps extends ReflectProps,
+    THost extends ReflectElement<TProps>,
   >(prototype: THost, properties: TProps): void {
     const propertyNames = Object.keys(properties) as PropName<TProps>[];
     const descriptors = Object.fromEntries(
@@ -147,12 +143,12 @@ export abstract class IDLAttributesElement<TProps extends IDLProps> extends HTML
   }
 
   private readProperties(): TProps {
-    const ctor = this.constructor as Partial<IDLElementCtor<TProps>>;
+    const ctor = this.constructor as Partial<ReflectElementCtor<TProps>>;
     const { properties } = ctor;
 
     if (properties === undefined) {
       throw new Error(
-        "IDLAttributesElement を継承する要素は static properties を定義する必要があります。",
+        "ReflectElement を継承する要素は static properties を定義する必要があります。",
       );
     }
 
