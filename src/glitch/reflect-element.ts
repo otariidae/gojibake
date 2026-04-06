@@ -6,28 +6,26 @@ export type EnumRule<T extends string> = {
   emptyValueDefault?: T;
 };
 
-export type ReflectedProps = Record<string, EnumRule<string>>;
+export type ReflectProps = Record<string, EnumRule<string>>;
 
-export type ReflectedAccessors<TProps extends ReflectedProps> = {
+export type ReflectAccessors<TProps extends ReflectProps> = {
   -readonly [TName in keyof TProps]: TProps[TName]["choices"][number] | null;
 };
 
-type ReflectedElementCtor<TProps extends ReflectedProps> = {
+type ReflectElementCtor<TProps extends ReflectProps> = {
   readonly properties: TProps;
 };
 
-type PropName<TProps extends ReflectedProps> = Extract<keyof TProps, string>;
-const ACCESSORS_INSTALLED = Symbol("reflected-attributes-accessors-installed");
+type PropName<TProps extends ReflectProps> = Extract<keyof TProps, string>;
+const ACCESSORS_INSTALLED = Symbol("reflect-element-accessors-installed");
 
-function readObservedAttributes<TProps extends ReflectedProps>(
-  ctor: Partial<ReflectedElementCtor<TProps>>,
+function readObservedAttributes<TProps extends ReflectProps>(
+  ctor: Partial<ReflectElementCtor<TProps>>,
 ): string[] {
   const { properties } = ctor;
 
   if (properties === undefined) {
-    throw new Error(
-      "ReflectedAttributesElement を継承する要素は static properties を定義する必要があります。",
-    );
+    throw new Error("ReflectElement を継承する要素は static properties を定義する必要があります。");
   }
 
   return Object.values(properties).map(({ attributeName }) => attributeName);
@@ -56,10 +54,10 @@ function normalizePropValue<T extends string>(value: string | null, rule: EnumRu
 }
 
 function createAccessorDescriptor<
-  TProps extends ReflectedProps,
-  THost extends ReflectedAttributesElement<TProps>,
+  TProps extends ReflectProps,
+  THost extends ReflectElement<TProps>,
   TName extends PropName<TProps>,
->(propertyName: TName): TypedPropertyDescriptor<ReflectedAccessors<TProps>[TName]> {
+>(propertyName: TName): TypedPropertyDescriptor<ReflectAccessors<TProps>[TName]> {
   return {
     configurable: true,
     get(this: THost) {
@@ -71,15 +69,13 @@ function createAccessorDescriptor<
   };
 }
 
-function installAccessorsIfNeeded<TProps extends ReflectedProps>(
-  ctor: Partial<ReflectedElementCtor<TProps>>,
+function installAccessorsIfNeeded<TProps extends ReflectProps>(
+  ctor: Partial<ReflectElementCtor<TProps>>,
 ): void {
   const { properties } = ctor;
 
   if (properties === undefined) {
-    throw new Error(
-      "ReflectedAttributesElement を継承する要素は static properties を定義する必要があります。",
-    );
+    throw new Error("ReflectElement を継承する要素は static properties を定義する必要があります。");
   }
 
   const prototype = (ctor as { prototype?: object }).prototype;
@@ -103,17 +99,15 @@ function installAccessorsIfNeeded<TProps extends ReflectedProps>(
   markedPrototype[ACCESSORS_INSTALLED] = true;
 }
 
-export abstract class ReflectedAttributesElement<
-  TProps extends ReflectedProps,
-> extends HTMLElement {
-  static readonly properties: ReflectedProps;
+export abstract class ReflectElement<TProps extends ReflectProps> extends HTMLElement {
+  static readonly properties: ReflectProps;
   readonly #properties: TProps;
 
   static get observedAttributes() {
     // biome-ignore lint/complexity/noThisInStatic: 派生クラスをthisで参照するため
     installAccessorsIfNeeded(this);
     // biome-ignore lint/complexity/noThisInStatic: 派生クラスをthisで参照するため
-    return readObservedAttributes(this as Partial<ReflectedElementCtor<ReflectedProps>>);
+    return readObservedAttributes(this as Partial<ReflectElementCtor<ReflectProps>>);
   }
 
   public constructor() {
@@ -123,22 +117,22 @@ export abstract class ReflectedAttributesElement<
 
   protected readProperty<TName extends PropName<TProps>>(
     propertyName: TName,
-  ): ReflectedAccessors<TProps>[TName] {
+  ): ReflectAccessors<TProps>[TName] {
     const property = this.#properties[propertyName];
     return normalizePropValue(this.getAttribute(property.attributeName), property);
   }
 
   protected writeProperty<TName extends PropName<TProps>>(
     propertyName: TName,
-    value: ReflectedAccessors<TProps>[TName],
+    value: ReflectAccessors<TProps>[TName],
   ): void {
     const property = this.#properties[propertyName];
     this.setAttribute(property.attributeName, String(value));
   }
 
   protected static installAccessors<
-    TProps extends ReflectedProps,
-    THost extends ReflectedAttributesElement<TProps>,
+    TProps extends ReflectProps,
+    THost extends ReflectElement<TProps>,
   >(prototype: THost, properties: TProps): void {
     const propertyNames = Object.keys(properties) as PropName<TProps>[];
     const descriptors = Object.fromEntries(
@@ -149,12 +143,12 @@ export abstract class ReflectedAttributesElement<
   }
 
   private readProperties(): TProps {
-    const ctor = this.constructor as Partial<ReflectedElementCtor<TProps>>;
+    const ctor = this.constructor as Partial<ReflectElementCtor<TProps>>;
     const { properties } = ctor;
 
     if (properties === undefined) {
       throw new Error(
-        "ReflectedAttributesElement を継承する要素は static properties を定義する必要があります。",
+        "ReflectElement を継承する要素は static properties を定義する必要があります。",
       );
     }
 

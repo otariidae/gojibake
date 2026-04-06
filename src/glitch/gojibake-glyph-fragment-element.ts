@@ -1,5 +1,5 @@
 import type { DualCompositePosition, QuadCompositeQuadrant } from "./composite-effect-builder.js";
-import { type EnumRule, ReflectedAttributesElement } from "./reflected-attributes-element.js";
+import { type EnumRule, ReflectElement } from "./reflect-element.js";
 
 type TextContentValidationRule = {
   required?: boolean;
@@ -36,7 +36,7 @@ type FragmentProps = {
  *
  * 列挙型 IDL 属性の自動反映は基底クラスへ寄せ、要素固有ロジックだけを持つ。
  */
-export class GojibakeGlyphFragmentElement extends ReflectedAttributesElement<FragmentProps> {
+export class GojibakeGlyphFragmentElement extends ReflectElement<FragmentProps> {
   public static readonly properties: FragmentProps = {
     region: {
       attributeName: "region",
