@@ -44,3 +44,8 @@ body {
   display: block;
   text-align: center;
 }
+
+.single-glyph {
+  font-size: 20vmin;
+  color: var(--fg);
+}
