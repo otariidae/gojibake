@@ -8,12 +8,18 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
-      "src/**/*.ts",
-      "styles.css",
-      "index.html",
+      "packages/**/*.ts",
+      "apps/site/**/*.ts",
+      "apps/site/styles.css",
+      "apps/site/index.html",
       "package.json",
+      "**/packages/**/package.json",
+      "**/apps/**/package.json",
       "tsconfig.json",
-      "biome.json"
+      "**/packages/**/tsconfig.json",
+      "**/apps/**/tsconfig.json",
+      "biome.json",
+      "test-setup.ts"
     ]
   },
   "formatter": {
@@ -30,7 +36,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/glitch/*.ts"],
+      "includes": ["packages/elements/src/glitch/*.ts"],
       "linter": {
         "rules": {
           "correctness": {

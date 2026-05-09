@@ -1,0 +1,13 @@
+{
+  "name": "gojibake-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "bun build ./index.html --outdir ./dist --target browser",
+    "dev": "bun ./index.html"
+  },
+  "dependencies": {
+    "gojibake-elements": "workspace:*"
+  }
+}

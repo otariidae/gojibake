@@ -1,12 +1,12 @@
-import { GojibakeGlyphElement } from "./glitch/gojibake-glyph-element.js";
-import { GojibakeGlyphFragmentElement } from "./glitch/gojibake-glyph-fragment-element.js";
-import { GlitchRenderer } from "./glitch/renderer.js";
-import type { Config } from "./glitch/state-factory.js";
-import { GlitchStateFactory } from "./glitch/state-factory.js";
-import { pickGlyphForChar } from "./glitch/utils.js";
+import {
+  type Config,
+  GlitchRenderer,
+  GlitchStateFactory,
+  pickGlyphForChar,
+  registerGojibakeElements,
+} from "gojibake-elements";
 
-customElements.define("gojibake-glyph-fragment", GojibakeGlyphFragmentElement);
-customElements.define("gojibake-glyph", GojibakeGlyphElement);
+registerGojibakeElements();
 
 const config: Config = {
   // 全体のうち何割を glitch 対象候補にするか。
