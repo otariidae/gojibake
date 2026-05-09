@@ -2,15 +2,18 @@
   "name": "gojibake",
   "private": true,
   "packageManager": "bun@1.3.11",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "prebuild": "rm -rf dist",
-    "build": "bun build ./index.html --outdir ./dist --target browser",
-    "dev": "bun ./index.html",
+    "build": "bun run --cwd apps/site build",
+    "dev": "bun run --cwd apps/site dev",
     "test": "bun test",
     "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov",
     "check:fix": "biome check . --write",
     "check": "biome check . && bun run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p packages/elements && tsc --noEmit -p apps/site"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",

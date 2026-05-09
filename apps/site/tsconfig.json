@@ -9,6 +9,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["packages/elements/src/**/*.ts", "apps/site/src/**/*.ts"],
-  "exclude": ["**/node_modules/**", "**/*.test.ts"]
+  "include": ["src/**/*.ts"]
 }
