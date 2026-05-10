@@ -19,6 +19,7 @@
       "tsconfig.base.json",
       "**/packages/**/tsconfig.json",
       "**/apps/**/tsconfig.json",
+      ".github/scripts/**/*.ts",
       "biome.json",
       "test-setup.ts"
     ]
