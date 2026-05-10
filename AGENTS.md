@@ -5,21 +5,25 @@
 ## ディレクトリ構成
 
 - `apps/site/` … Bun HTML bundler で配信するデモサイト（`index.html`、`styles.css`、`src/main.ts`）
-- `packages/elements/` … カスタム要素・レンダラー・状態生成（`gojibake-elements`。将来の npm 公開候補）
+- `packages/elements/` … カスタム要素・レンダラー・状態生成（`gojibake-elements`。npm 公開前段のパッケージ）
+- `packages/elements/src/` … パッケージの実装ソース。公開面は `src/index.ts` に集約する
+- `packages/elements/dist/` … `gojibake-elements` の配布前提ビルド成果物。`package.json` の `exports` / `types` はここを指す
 - `apps/site/dist/` … `bun run build` の出力（GitHub Pages などの配信元）
+- `tsconfig.base.json` … 各ワークスペースで共有する TypeScript compilerOptions
 
 ## ビルド・テスト・Lint コマンド
 
 ルートから実行します（ワークスペースまとめてインストール）。
 
 - セットアップ: `mise install` / `bun install`
-- ビルド: `bun run build`
-- 開発確認: `bun run dev`
+- ビルド: `bun run build`（Bun workspace の依存順実行で `packages/elements/dist/` から `apps/site/dist/` を生成する）
+- 開発確認: `bun run dev`（起動前に workspace package のビルドを実行する）
 - Lint, Format: `bun run check:fix`
 - 型チェック: `bun run typecheck`
-- 単体テスト: `bun test`
+- 単体テスト: `bun run test`
+- 総合検証: `bun run check`
 
-単体テストは `packages/elements` 内にあります。変更後は少なくとも `bun run check` を通したうえで、`bun run dev` によるブラウザ確認を行います。
+単体テストは `packages/elements` 内にあります。`bun run check` は lint、ビルド、型チェック、単体テストをまとめて実行します。workspace 横断の実行は Bun の `--filter` を使い、個別 package の `prebuild` には依存先 package のビルドを書かない方針です。変更後は少なくとも `bun run check` を通したうえで、描画に関わる変更では `bun run dev` によるブラウザ確認を行います。
 
 ## 高レベルアーキテクチャ
 
@@ -38,6 +42,13 @@
   - `GlitchRenderer` クラス：`DisplayState` をDOMに反映する
   - `GojibakeGlyphElement` クラス：文字化け演出がある1文字を表す自律カスタム要素
   - `GojibakeGlyphFragmentElement` クラス：`GojibakeGlyphElement` の子要素として文字化け演出の特定の部位を表す
+- `packages/elements/package.json`
+  - `exports` / `types` は `dist` を指す。サイト側も公開パッケージ境界越しに `gojibake-elements` を利用する
+  - 誤公開防止のため、実際に npm 公開するまでは `private: true` を維持する
+- `tsconfig.base.json` と各 `tsconfig.json`
+  - 共通の TypeScript 設定は `tsconfig.base.json` に置く
+  - `packages/elements/tsconfig.json` は `tsc -p .` で `dist` へ配布物を生成できる設定にする
+  - 型チェックでは `tsc --noEmit -p ...` を CLI 側で付ける
 
 ## コードスタイル
 

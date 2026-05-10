@@ -1,13 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "Bundler",
-    "lib": ["DOM", "ES2022"],
-    "strict": true,
-    "noEmitOnError": true,
-    "skipLibCheck": true,
-    "noEmit": true
-  },
+  "extends": "../../tsconfig.base.json",
   "include": ["src/**/*.ts"]
 }

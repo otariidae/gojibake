@@ -16,6 +16,7 @@
       "**/packages/**/package.json",
       "**/apps/**/package.json",
       "tsconfig.json",
+      "tsconfig.base.json",
       "**/packages/**/tsconfig.json",
       "**/apps/**/tsconfig.json",
       "biome.json",
