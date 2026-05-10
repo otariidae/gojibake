@@ -5,7 +5,8 @@
   "scripts": {
     "prebuild": "rm -rf dist",
     "build": "bun build ./index.html --outdir ./dist --target browser",
-    "dev": "bun ./index.html"
+    "dev": "bun ./index.html",
+    "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "gojibake-elements": "workspace:*"

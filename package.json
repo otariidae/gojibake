@@ -7,13 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --cwd apps/site build",
-    "dev": "bun run --cwd apps/site dev",
-    "test": "bun test",
-    "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov",
+    "build": "bun --filter '*' build",
+    "build:packages": "bun --filter './packages/*' build",
+    "dev": "bun run build:packages && bun --filter gojibake-site dev",
+    "test": "bun --filter '*' --if-present test",
+    "test:coverage": "bun --filter '*' --if-present test:coverage",
     "check:fix": "biome check . --write",
-    "check": "biome check . && bun run build",
-    "typecheck": "tsc --noEmit -p packages/elements && tsc --noEmit -p apps/site"
+    "check": "biome check . && bun run build && bun run typecheck && bun run test",
+    "typecheck": "bun run build:packages && bun --filter '*' typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",

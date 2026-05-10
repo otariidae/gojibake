@@ -3,11 +3,23 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
+  "main": "./dist/index.js",
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "tsc -p .",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test --preload ../../test-setup.ts src",
+    "test:coverage": "bun test --preload ../../test-setup.ts --coverage --coverage-reporter=text --coverage-reporter=lcov src"
   },
-  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
   "files": [
-    "src"
+    "dist"
   ]
 }
