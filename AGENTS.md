@@ -6,7 +6,7 @@
 
 - `apps/site/` … Bun HTML bundler で配信するデモサイト（`index.html`、`styles.css`、`src/main.ts`）
 - `packages/elements/` … カスタム要素・レンダラー・状態生成（`gojibake-elements`。npm 公開前段のパッケージ）
-- `packages/elements/src/` … パッケージの実装ソース。公開面は `src/index.ts` に集約する
+- `packages/elements/src/` … パッケージの実装ソース。公開面は `src/index.ts` に集約し、要素・レンダラー・状態生成を同階層に置く
 - `packages/elements/dist/` … `gojibake-elements` の配布前提ビルド成果物。`package.json` の `exports` / `types` はここを指す
 - `apps/site/dist/` … `bun run build` の出力（GitHub Pages などの配信元）
 - `tsconfig.base.json` … 各ワークスペースで共有する TypeScript compilerOptions
@@ -35,7 +35,7 @@
 - `apps/site/src/main.ts`
   - TypeScript のエントリポイント
   - `registerGojibakeElements()` の呼び出しと単発 glitch 表示のライフサイクルを管理する
-- `packages/elements/src/glitch/`（および `packages/elements/src/index.ts` の公開面）
+- `packages/elements/src/`（および `packages/elements/src/index.ts` の公開面）
   - `DisplayState` 型：どの位置の文字をどのように化けさせるかを表す状態
   - `GlitchStateFactory` クラス：`DisplayState` を生成する
   - `buildCompositeEffects` 関数：複数の文字をどのよう組み合わせて化けさせるかを生成する
