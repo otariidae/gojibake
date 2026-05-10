@@ -23,6 +23,16 @@ function render(source: string, state: DisplayState): HTMLElement {
 }
 
 describe("GlitchRenderer", () => {
+  it("source が空なら target を空にする", () => {
+    const target = document.createElement("div");
+    target.textContent = "古い内容";
+    const renderer = new GlitchRenderer({ source: "", target });
+
+    renderer.renderDisplayState({ effects: new Map() });
+
+    expect(target.childNodes).toHaveLength(0);
+  });
+
   it("通常文字を .char と .char__base で描画する", () => {
     const target = render("AB", { effects: new Map() });
 
@@ -41,6 +51,14 @@ describe("GlitchRenderer", () => {
     expect(
       Array.from(target.querySelectorAll(".char__base")).map((node) => node.textContent),
     ).toEqual(["A", "Z"]);
+  });
+
+  it("source の範囲外にある effect は描画に影響しない", () => {
+    const target = render("A", {
+      effects: new Map([[1, { kind: "replacement", replacementChar: "Z" }]]),
+    });
+
+    expect(target.textContent).toBe("A");
   });
 
   it("空白を NBSP、改行を br として描画する", () => {
