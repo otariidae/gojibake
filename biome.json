@@ -37,7 +37,7 @@
   },
   "overrides": [
     {
-      "includes": ["packages/elements/src/glitch/*.ts"],
+      "includes": ["packages/elements/src/*.ts"],
       "linter": {
         "rules": {
           "correctness": {
