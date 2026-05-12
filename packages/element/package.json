@@ -1,9 +1,19 @@
 {
   "name": "gojibake-element",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Web Components for gojibake-style garbled text / ligature-like glyph effects.",
+  "license": "CC0-1.0",
   "type": "module",
   "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/otariidae/gojibake.git",
+    "directory": "packages/elements"
+  },
+  "bugs": {
+    "url": "https://github.com/otariidae/gojibake/issues"
+  },
+  "homepage": "https://otariidae.github.io/gojibake/",
   "scripts": {
     "prebuild": "rm -rf dist",
     "build": "tsc -p .",
