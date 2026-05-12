@@ -44,7 +44,6 @@
   - `GojibakeGlyphFragmentElement` クラス：`GojibakeGlyphElement` の子要素として文字化け演出の特定の部位を表す
 - `packages/element/package.json`
   - `exports` / `types` は `dist` を指す。サイト側も公開パッケージ境界越しに `gojibake-element` を利用する
-  - 誤公開防止のため、実際に npm 公開するまでは `private: true` を維持する
 - `tsconfig.base.json` と各 `tsconfig.json`
   - 共通の TypeScript 設定は `tsconfig.base.json` に置く
   - `packages/element/tsconfig.json` は `tsc -p .` で `dist` へ配布物を生成できる設定にする
