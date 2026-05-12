@@ -14,11 +14,11 @@
     "apps/site": {
       "name": "gojibake-site",
       "dependencies": {
-        "gojibake-elements": "workspace:*",
+        "gojibake-element": "workspace:*",
       },
     },
-    "packages/elements": {
-      "name": "gojibake-elements",
+    "packages/element": {
+      "name": "gojibake-element",
       "version": "0.0.0",
     },
   },
@@ -51,7 +51,7 @@
 
     "entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
 
-    "gojibake-elements": ["gojibake-elements@workspace:packages/elements"],
+    "gojibake-element": ["gojibake-element@workspace:packages/element"],
 
     "gojibake-site": ["gojibake-site@workspace:apps/site"],
 

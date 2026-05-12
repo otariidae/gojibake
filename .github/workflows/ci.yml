@@ -24,7 +24,7 @@ jobs:
       - run: bun run test:coverage
 
       - name: Render coverage comment
-        run: bun .github/scripts/write-coverage-summary.ts --lcov packages/elements/coverage/lcov.info --source-root packages/elements/src > coverage-summary.md
+        run: bun .github/scripts/write-coverage-summary.ts --lcov packages/element/coverage/lcov.info --source-root packages/element/src > coverage-summary.md
 
       - name: Comment coverage summary
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository

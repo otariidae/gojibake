@@ -4,7 +4,7 @@ import {
   GlitchStateFactory,
   pickGlyphForChar,
   registerGojibakeElements,
-} from "gojibake-elements";
+} from "gojibake-element";
 
 registerGojibakeElements();
 
