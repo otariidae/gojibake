@@ -1,6 +1,6 @@
 {
   "name": "gojibake-element",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Web Components for gojibake-style garbled text / ligature-like glyph effects.",
   "license": "CC0-1.0",
   "type": "module",
