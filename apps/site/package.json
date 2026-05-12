@@ -9,6 +9,6 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
-    "gojibake-elements": "workspace:*"
+    "gojibake-element": "workspace:*"
   }
 }

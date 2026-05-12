@@ -38,7 +38,7 @@
   },
   "overrides": [
     {
-      "includes": ["packages/elements/src/*.ts"],
+      "includes": ["packages/element/src/*.ts"],
       "linter": {
         "rules": {
           "correctness": {
