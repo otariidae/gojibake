@@ -13,8 +13,11 @@
     "test": "bun --filter '*' --if-present test && bun run test:scripts",
     "test:scripts": "bun test ./.github/scripts/*.test.ts",
     "test:coverage": "bun --filter '*' --if-present test:coverage",
-    "check:fix": "biome check . --write",
-    "check": "biome check . && bun run build && bun run typecheck && bun run test",
+    "format": "bun fmt",
+    "format:check": "bun fmt --check",
+    "lint": "biome lint .",
+    "check:fix": "bun run format && biome lint --write . && bun run format",
+    "check": "bun run format:check && bun run lint && bun run build && bun run typecheck && bun run test",
     "typecheck": "bun run build:packages && bun --filter '*' typecheck"
   },
   "devDependencies": {

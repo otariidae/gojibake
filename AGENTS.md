@@ -18,12 +18,14 @@
 - セットアップ: `mise install` / `bun install`
 - ビルド: `bun run build`（Bun workspace の依存順実行で `packages/element/dist/` から `apps/site/dist/` を生成する）
 - 開発確認: `bun run dev`（起動前に workspace package のビルドを実行する）
-- Lint, Format: `bun run check:fix`
+- 整形: `bun fmt`（`bun run format`）。設定は `bunfig.toml` の `[fmt]`
+- Lint: `bun run lint`（`biome lint`。Bun にはリンターが無い）
+- 整形と Lint の修正: `bun run check:fix`
 - 型チェック: `bun run typecheck`
 - 単体テスト: `bun run test`
 - 総合検証: `bun run check`
 
-単体テストは `packages/element` 内にあります。`bun run check` は lint、ビルド、型チェック、単体テストをまとめて実行します。workspace 横断の実行は Bun の `--filter` を使い、個別 package の `prebuild` には依存先 package のビルドを書かない方針です。変更後は少なくとも `bun run check` を通したうえで、描画に関わる変更では `bun run dev` によるブラウザ確認を行います。
+単体テストは `packages/element` 内にあります。`bun run check` は整形、lint、ビルド、型チェック、単体テストをまとめて実行します。workspace 横断の実行は Bun の `--filter` を使い、個別 package の `prebuild` には依存先 package のビルドを書かない方針です。変更後は少なくとも `bun run check` を通したうえで、描画に関わる変更では `bun run dev` によるブラウザ確認を行います。
 
 ## 高レベルアーキテクチャ
 
@@ -49,6 +51,9 @@
   - `packages/element/tsconfig.json` は `tsc -p .` で `dist` へ配布物を生成できる設定にする
   - 型チェックは `bun check --no-script` で行う。これは Bun 組み込みの TypeScript チェッカーで、結果は TypeScript 7 の `tsc --noEmit` に揃う。`.d.ts` は生成しない
   - 開発依存の `typescript` は `bun -p process.versions.typescript` と同じ版に固定し、エディタと `tsc` の emit を `bun check` に合わせる
+  - `.d.ts` の生成は Bun 1.4.5 では行えないため、配布物の emit だけ `tsc` に残す
+- 整形は `bun fmt`。Biome のフォーマッターは無効にし、Biome は lint だけに使う
+- `apps/site/index.html` の本文は `<!-- prettier-ignore -->` で守る。改行が `textContent` に入り、グリッチの改行になる
 
 ## コードスタイル
 
