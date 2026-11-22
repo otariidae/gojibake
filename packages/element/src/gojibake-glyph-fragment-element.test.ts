@@ -35,18 +35,18 @@ describe("GojibakeGlyphFragmentElement", () => {
   });
 
   describe("generated IDL accessors", () => {
-    it.each([
-      "region",
-      "placement",
-    ] as const)("%s の getter / setter を定義テーブルから生成する", (propertyName) => {
-      const descriptor = Object.getOwnPropertyDescriptor(
-        GojibakeGlyphFragmentElement.prototype,
-        propertyName,
-      );
+    it.each(["region", "placement"] as const)(
+      "%s の getter / setter を定義テーブルから生成する",
+      (propertyName) => {
+        const descriptor = Object.getOwnPropertyDescriptor(
+          GojibakeGlyphFragmentElement.prototype,
+          propertyName,
+        );
 
-      expect(descriptor?.get).toBeTypeOf("function");
-      expect(descriptor?.set).toBeTypeOf("function");
-    });
+        expect(descriptor?.get).toBeTypeOf("function");
+        expect(descriptor?.set).toBeTypeOf("function");
+      },
+    );
   });
 
   describe("glyph", () => {

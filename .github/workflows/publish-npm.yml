@@ -35,7 +35,7 @@ jobs:
         if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          pkg="$(node -p "require('./packages/element/package.json').version")"
+          pkg="$(bun -p "require('./packages/element/package.json').version")"
           if [ "$tag" != "$pkg" ]; then
             echo "::error::Tag version v${tag} does not match packages/element/package.json version ${pkg}"
             exit 1

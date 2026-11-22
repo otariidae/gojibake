@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { parseLcov } from "./lcov";
 
 describe("parseLcov", () => {

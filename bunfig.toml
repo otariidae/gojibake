@@ -4,3 +4,9 @@ linker = "hoisted"
 
 [test]
 preload = ["./test-setup.ts"]
+
+[fmt]
+# これまでの Biome と同じ折り返し幅。HTML の空白は textContent になるので潰さない。
+printWidth = 100
+sortImports = true
+htmlWhitespaceSensitivity = "strict"

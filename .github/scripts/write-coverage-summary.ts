@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
+
 import { type CoverageMetric, parseLcov } from "./lcov";
 
 type CliOptions = {
