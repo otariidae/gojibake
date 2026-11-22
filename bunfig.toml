@@ -1,2 +1,6 @@
+[install]
+# 既存の lockfile は hoisted のまま。新規ワークスペースの既定である isolated には切り替えない。
+linker = "hoisted"
+
 [test]
 preload = ["./test-setup.ts"]
