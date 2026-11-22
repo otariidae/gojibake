@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "prebuild": "rm -rf dist",
-    "build": "bun build ./index.html --outdir ./dist --target browser",
+    "build": "bun build ./index.html --outdir ./dist --target browser --check",
     "dev": "bun ./index.html",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "bun check --no-script"
   },
   "dependencies": {
     "gojibake-element": "workspace:*"

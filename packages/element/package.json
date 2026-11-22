@@ -17,7 +17,7 @@
   "scripts": {
     "prebuild": "rm -rf dist",
     "build": "tsc -p .",
-    "typecheck": "tsc --noEmit -p .",
+    "typecheck": "bun check --no-script",
     "test": "bun test --preload ../../test-setup.ts src",
     "test:coverage": "bun test --preload ../../test-setup.ts --coverage --coverage-reporter=text --coverage-reporter=lcov src"
   },

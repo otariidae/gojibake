@@ -47,7 +47,8 @@
 - `tsconfig.base.json` と各 `tsconfig.json`
   - 共通の TypeScript 設定は `tsconfig.base.json` に置く
   - `packages/element/tsconfig.json` は `tsc -p .` で `dist` へ配布物を生成できる設定にする
-  - 型チェックでは `tsc --noEmit -p ...` を CLI 側で付ける
+  - 型チェックは `bun check --no-script` で行う。これは Bun 組み込みの TypeScript チェッカーで、結果は TypeScript 7 の `tsc --noEmit` に揃う。`.d.ts` は生成しない
+  - 開発依存の `typescript` は `bun -p process.versions.typescript` と同じ版に固定し、エディタと `tsc` の emit を `bun check` に合わせる
 
 ## コードスタイル
 
@@ -58,7 +59,8 @@
 
 - 基本的にユーザー向け説明、実装中のコミュニケーション、コードコメントは日本語で記述する
   - 英語を使うのは外部仕様や識別子に引きずられるなど明確な理由がある場合に限る
-- Bun のバージョン管理は `mise` を優先し、依存関係やビルドは Bun ベースで扱う
+- Bun のバージョン管理は `mise` を優先し、依存関係やビルドは Bun ベースで扱う。CI の `bun-version` と `packageManager` は `mise.toml` と同じ版にする
+- ワークスペースの依存配置は `bunfig.toml` で hoisted linker に固定する
 - 開発時の動作確認は `bun run dev` を基本とする
 - 変更後はLint、整形、型チェック、単体テストを通す
 - 描画に関わる変更後は `chrome-devtools` を使ってページを開き、見た目と挙動を実際に確認してから完了とする
